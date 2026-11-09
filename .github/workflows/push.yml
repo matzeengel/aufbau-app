@@ -1,0 +1,37 @@
+name: Erinnerungen
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+concurrency:
+  group: push
+  cancel-in-progress: false
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: push
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Letzten Stand laden
+        uses: actions/cache/restore@v4
+        with:
+          path: push-state
+          key: push-state-${{ github.run_id }}
+          restore-keys: push-state-
+      - name: Abhängigkeiten
+        working-directory: push
+        run: npm install --no-audit --no-fund --silent
+      - name: Fällige Erinnerungen senden
+        env:
+          PUSH_CONFIG: ${{ secrets.PUSH_CONFIG }}
+        run: node push/send.mjs
+      - name: Stand speichern
+        uses: actions/cache/save@v4
+        with:
+          path: push-state
+          key: push-state-${{ github.run_id }}
