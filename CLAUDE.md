@@ -26,7 +26,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Mag nicht: Vollkornnudeln, Wraps, Lachs. Rezepte einfach halten: nur Pfanne, Airfryer und Topf für Reis und Nudeln.
 - Shakshuka nur sonntags.
 - Meal Prep: Mittag wird vorgekocht (Sonntag 4 Portionen für Mo bis Do, Mittwoch 3 Portionen für Fr bis So), abends frisch.
-  - Plan A: Chili und Curry. Plan B: Reis Bowl und Airfryer Kartoffel Hähnchen. Beides sind nur Schnellvorlagen in der Woche.
+  - Unter Einkauf kreuzt Matze an, welche Gerichte er diese Woche essen will (`pick`). `distribute()` verteilt sie auf die Tage: Mittag in Blöcken passend zum Vorkochen, Frühstück, Snack und Abendessen im Wechsel, Shakshuka nur sonntags. Plan A/B gibt es nicht mehr.
 - Pro Mahlzeit gibt es mindestens 3 Optionen (`SLOTOPTS`), die alle grob zum Tagesziel passen:
   - Frühstück: Haferflocken mit Mandelmus, Overnight Oats mit Skyr, Rührei mit Vollkornbrot.
   - Mittag (vorgekocht): Chili, Curry, Reis Bowl, Airfryer Kartoffel Hähnchen.
@@ -43,7 +43,8 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
   - Auf GitHub Pages: Live-Barcode-Scanner (ZXing in `vendor/`), Open Food Facts für Produktdaten, nur localStorage.
 - localStorage-Key `aufbau-plan-v1`. Wichtige Felder:
   - `menu = {f,m,b,a}` mit je 7 Rezept-IDs (Wochenplan pro Wochentag), `dayMenu[YYYY-MM-DD] = {slot: rid}` für Änderungen nur an einem Tag
-  - `step`, `train`, `plan` (nur letzte Vorlage)
+  - `pick = {f,m,b,a}` angekreuzte Gerichte der Woche
+  - `step`, `train`
   - `log[YYYY-MM-DD] = {e:{slot:{r,m}}, x:[{n,k,p,c,f}]}` (gegessene Mahlzeit mit Rezept und Makros zum Zeitpunkt des Abhakens)
   - `weights[date]`, `wtime[date]`
   - `products[ean]`

@@ -423,6 +423,13 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     s.step=Math.max(0,Math.min(3,+s.step||0));
     ['prices','vorrat','extras','shop','log','weights','wtime','products','dayMenu'].forEach(function(k){if(!s[k]||typeof s[k]!=='object'||Array.isArray(s[k]))s[k]={}});
     if(!Array.isArray(s.journal)) s.journal=[];
+    if(!s.pick||typeof s.pick!=='object') s.pick={};
+    SLOTS.forEach(function(sl){
+      var arr=Array.isArray(s.pick[sl])?s.pick[sl].filter(function(r){return SLOTOPTS[sl].indexOf(r)>=0}):[];
+      if(!arr.length) arr=SLOTOPTS[sl].filter(function(r){return s.menu[sl].indexOf(r)>=0});
+      if(sl==='a'&&!arr.some(function(r){return r!=='shakshuka'})) arr.unshift('bolognese');
+      s.pick[sl]=SLOTOPTS[sl].filter(function(r){return arr.indexOf(r)>=0});
+    });
     s.v=3;
     return s;
   }
@@ -539,7 +546,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   /* ---------- Navigation ---------- */
   var VIEWS=['heute','woche','einkauf','analyse'];
   var view=VIEWS.indexOf((location.hash||'').slice(1))>=0?location.hash.slice(1):'heute';
-  var heuteOffset=0, shopToast='', copyText='', period=30, weighOpen=false, backupMode='', backupMsg='';
+  var dishMsg='', heuteOffset=0, shopToast='', copyText='', period=30, weighOpen=false, backupMode='', backupMsg='';
   var main=document.getElementById('main');
   document.getElementById('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(!b)return;if(view===b.dataset.tab){window.scrollTo({top:0,behavior:'smooth'});return}view=b.dataset.tab;try{history.replaceState(null,'','#'+view)}catch(x){}render();window.scrollTo(0,0)});
   window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(VIEWS.indexOf(h)>=0&&h!==view){view=h;render()}});
@@ -605,6 +612,16 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     else if(gap<-250) h+='<p>Du liegst dann ca. '+nf0.format(Math.round(-gap/10)*10)+' kcal drüber. Lass Extras weg oder nimm beim Abendessen etwas weniger Beilage.</p>';
     if(changed.length) h+='<button class="btn fill small" data-act="suggest-apply">Vorschlag übernehmen</button>';
     return h+'</div></section>';
+  }
+  /* Gewählte Gerichte auf die Woche verteilen. Mittag in Blöcken passend zum Vorkochen (So für Mo bis Do, Mi für Fr bis So) */
+  var BLOCKS={1:[7],2:[4,3],3:[2,2,3],4:[2,2,2,1]};
+  function distribute(){
+    var P=state.pick, d, i;
+    ['f','b'].forEach(function(s){for(d=0;d<7;d++)state.menu[s][d]=P[s][d%P[s].length]});
+    var L=P.m, sizes=BLOCKS[L.length]||[7]; d=0;
+    for(i=0;i<L.length;i++){for(var j=0;j<sizes[i];j++){if(d<7)state.menu.m[d++]=L[i]}}
+    var sh=P.a.indexOf('shakshuka')>=0, other=P.a.filter(function(r){return r!=='shakshuka'}), n=0;
+    for(d=0;d<7;d++){if(d===6&&sh)state.menu.a[d]='shakshuka';else state.menu.a[d]=other[(n++)%other.length]}
   }
   function prepCount(from,to){var c={};for(var d=from;d<=to;d++){var r=state.menu.m[d];c[r]=(c[r]||0)+1}return Object.keys(c).map(function(r){return c[r]+'x '+R[r].n}).join(', ')}
   function viewHeute(){
@@ -866,8 +883,8 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     var h=head('Woche','Stufe '+STEPS[state.step].n+' · Training '+state.train);
     h+='<section class="sec"><div class="sec-h"><span>Kalorienstufe</span></div><div class="card pad"><div class="seg">'+STEPS.map(function(s,i){return '<button data-act="step" data-s="'+i+'" aria-pressed="'+(state.step===i)+'">'+s.n+'</button>'}).join('')+'</div><div class="sec-f" style="margin:8px 2px 0">'+esc(STEPS[state.step].d)+' Unter Analyse siehst du, wann du hochgehen solltest.</div></div></section>';
     h+='<section class="sec"><div class="list"><div class="field"><label for="train">Training um</label><select id="train" data-act="train">'+['16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00'].map(function(t){return '<option'+(t===state.train?' selected':'')+'>'+t+'</option>'}).join('')+'</select></div></div><div class="sec-f">Die Mahlzeit vor dem Training kommt 2 Stunden vorher, das Abendessen 90 Minuten danach.</div></section>';
-    h+='<section class="sec"><div class="sec-h"><span>Meal Prep</span><span style="text-transform:none">Mittag schnell füllen</span></div><div class="card pad"><div class="seg">'+['A','B'].map(function(p){return '<button data-act="preset" data-p="'+p+'">Plan '+p+'</button>'}).join('')+'</div>'+
-      '<div class="sec-f" style="margin:10px 2px 0"><b style="color:var(--label)">Sonntag kochen:</b> '+esc(prepCount(0,3))+'<br><b style="color:var(--label)">Mittwoch kochen:</b> '+esc(prepCount(4,6))+'</div></div></section>';
+    h+='<section class="sec"><div class="sec-h"><span>Meal Prep</span></div><div class="card pad">'+
+      '<div style="font-size:15px;color:var(--label2)"><b style="color:var(--label)">Sonntag kochen:</b> '+esc(prepCount(0,3))+'<br><b style="color:var(--label)">Mittwoch kochen:</b> '+esc(prepCount(4,6))+'</div></div><div class="sec-f">Welche Gerichte du diese Woche isst, kreuzt du unter Einkauf an. Hier kannst du einzelne Tage noch anpassen.</div></section>';
     for(var d=0;d<7;d++){
       var t=dayPlan(d);
       h+='<section class="sec"><div class="dayhead'+(d===today?' today':'')+'"><span>'+DAYS[d]+'</span><span class="num">'+nf0.format(t[0])+' kcal · '+t[1]+' g P</span></div><div class="list">'+
@@ -912,6 +929,14 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     });
     if(c.vorrat.length){body+='<section class="sec"><div class="sec-h"><span>Vorrat nachkaufen</span></div><div class="list">'+c.vorrat.map(function(r){total++;sum+=r.cost;if(state.shop[r.id])done++;return shopRow(r,AN[I[r.id][1]])}).join('')+'</div></section>'}
     var h=head('Einkauf','Kaufland · 7 Tage');
+    h+='<section class="sec"><div class="sec-h"><span>Diese Woche essen</span></div><div class="list">';
+    [['f','Frühstück'],['m','Mittag, vorgekocht'],['b','Vor dem Training'],['a','Abendessen']].forEach(function(g,gi){
+      h+='<div class="row" style="min-height:0;padding:'+(gi?'14px':'10px')+' 16px 4px"><span class="main"><span class="s" style="text-transform:uppercase;letter-spacing:.02em">'+g[1]+'</span></span></div>';
+      SLOTOPTS[g[0]].forEach(function(r){var on=state.pick[g[0]].indexOf(r)>=0, cnt=state.menu[g[0]].filter(function(x){return x===r}).length, m=macros(r);
+        h+='<label class="row ind'+(on?' on':'')+'"><input class="hidden-check" type="checkbox" data-act="dish" data-s="'+g[0]+'" data-r="'+r+'"'+(on?' checked':'')+'><span class="cbox">'+ICON.check+'</span><span class="main"><span class="t">'+esc(R[r].n)+'</span><span class="s num">'+m[0]+' kcal · '+m[1]+' g P'+(r==='shakshuka'?' · nur sonntags':'')+'</span></span>'+(on&&cnt?'<span class="tag num">'+cnt+'x</span>':'')+'</label>';
+      });
+    });
+    h+='</div>'+(dishMsg?'<div class="sec-f" style="color:var(--orange);font-weight:600">'+esc(dishMsg)+'</div>':'')+'<div class="sec-f">Die App verteilt die Gerichte auf die Woche: Mittag in Blöcken fürs Vorkochen, die anderen im Wechsel. Einzelne Tage passt du unter Woche an.</div></section>';
     h+='<section class="sec"><div class="card"><div class="sum"><div><div class="big">'+eur.format(sum)+'</div><div class="s">ungefähr, nach deinem Wochenplan, Stufe '+STEPS[state.step].n+'</div></div><div class="s num" style="text-align:right">'+done+' von '+total+'<br>im Wagen</div></div><div class="prog"><i style="width:'+(total?done/total*100:0)+'%"></i></div></div>'+
       '<div class="btnrow" style="margin-top:10px"><button class="btn fill" data-act="copy" style="flex:1">Für Notizen kopieren</button><button class="btn" data-act="done">Erledigt</button></div>'+
       '<div class="confirm" id="done-confirm" hidden><div style="font-size:15px;margin-bottom:10px">Häkchen, Vorrat und Extras für nächste Woche zurücksetzen?</div><div class="btnrow"><button class="btn fill small" data-act="done-yes">Zurücksetzen</button><button class="btn small" data-act="done-no">Abbrechen</button></div></div>'+
@@ -1096,7 +1121,6 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(a==='delx'){var l3=logOf(k);if(l3){var xr=l3.x.splice(+b.dataset.i,1)[0];if(xr)jlog(k,'extra-off',xr.n+' gelöscht',xr.k,xr.p);commit();render()}return}
     if(a==='pick'){openPicker(b.dataset.slot);return}
     if(a==='suggest-apply'){var bp=bestPlan(k,d);if(bp.best){var o=state.dayMenu[k]||{};bp.vary.forEach(function(s){var r=bp.best.pick[s];if(r===state.menu[s][d])delete o[s];else o[s]=r});if(Object.keys(o).length)state.dayMenu[k]=o;else delete state.dayMenu[k];jlog(k,'set','Vorschlag übernommen: '+bp.vary.map(function(s){return R[bp.best.pick[s]].n}).join(', '));commit();render()}return}
-    if(a==='preset'){var pp=PLANS[b.dataset.p];state.plan=b.dataset.p;for(var dd=0;dd<7;dd++)state.menu.m[dd]=pp[dd<=3?0:1];commit();render();return}
     if(a==='sres'){var it=scan.items&&scan.items[+b.dataset.i];if(it){it.msg='Aus Open Food Facts. Werte kurz prüfen.';editStage(it)}return}
     if(a==='step'){var old=state.step;state.step=+b.dataset.s;if(old!==state.step)jlog(iso(new Date()),'set','Kalorienstufe '+STEPS[old].n+' auf '+STEPS[state.step].n);commit();render();return}
     if(a==='period'){period=+b.dataset.n;render();return}
@@ -1114,7 +1138,11 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   });
   main.addEventListener('change',function(e){
     var t=e.target, a=t.dataset.act; if(!a) return;
-    if(a==='menu'){var ms=t.dataset.s,md=+t.dataset.d;if(R[t.value]&&R[t.value].s===ms){state.menu[ms][md]=t.value;commit();render()}return}
+    if(a==='menu'){var ms=t.dataset.s,md=+t.dataset.d;if(R[t.value]&&R[t.value].s===ms){state.menu[ms][md]=t.value;if(state.pick[ms].indexOf(t.value)<0)state.pick[ms]=SLOTOPTS[ms].filter(function(r){return r===t.value||state.pick[ms].indexOf(r)>=0});commit();render()}return}
+    if(a==='dish'){var ps=t.dataset.s,pr=t.dataset.r,cur=state.pick[ps].slice(),on=cur.indexOf(pr)>=0;
+      var next=on?cur.filter(function(r){return r!==pr}):SLOTOPTS[ps].filter(function(r){return r===pr||cur.indexOf(r)>=0});
+      if(!next.length||(ps==='a'&&!next.some(function(r){return r!=='shakshuka'}))){dishMsg=ps==='a'?'Mindestens ein Abendessen außer Shakshuka bleibt drin.':'Mindestens ein Gericht pro Mahlzeit bleibt drin.';render();return}
+      state.pick[ps]=next;distribute();dishMsg='';commit();render();return}
     if(a==='train'){state.train=t.value;commit();render();return}
     if(a==='shop'){if(t.checked)state.shop[t.dataset.id]=1;else delete state.shop[t.dataset.id];commit();render();return}
     if(a==='vorrat'){if(t.checked)state.vorrat[t.dataset.id]=1;else delete state.vorrat[t.dataset.id];commit();render();return}
