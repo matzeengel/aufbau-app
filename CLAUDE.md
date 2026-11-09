@@ -65,7 +65,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Ruhetage: Ziel 200 kcal und 50 g Kohlenhydrate niedriger (`goal(k,d)`).
 - Timer: Zeiten wie „15 Minuten“ in Rezept- und Kochschritten werden zu Timer-Buttons (`timerize`). Timer oben als Pille, Ton per WebAudio, Bildschirm bleibt an (Wake Lock). Läuft nur zuverlässig bei offener App.
 - Erinnerungen (`REM`): Kalender-Export als .ics und Push. Push: Die App erzeugt VAPID-Schlüssel im Browser (localStorage `aufbau-push`), abonniert Push und erzeugt einen Code. Matze legt ihn als Repository-Secret `PUSH_CONFIG` an. `.github/workflows/push.yml` läuft alle 10 Minuten und schickt fällige Erinnerungen mit `push/send.mjs` (web-push). Claude darf keine Secrets setzen, das macht Matze selbst.
-- Design: Apple-Stil mit Systemschrift, iOS-Farben, Ringen, gruppierten Listen und schwebender Glas-Tab-Leiste. Farben stehen als CSS-Variablen in `:root` mit Dunkelmodus.
+- Design: Apple-Stil mit Systemschrift, iOS-Farben, Tacho für kcal mit Balken für Protein, Carbs und Fett (Farben: kcal blau, Protein grün, Carbs orange, Fett lila), Logo mit steigenden Balken und Trendpfeil auf Schwarz, gruppierten Listen und schwebender Glas-Tab-Leiste. Farben stehen als CSS-Variablen in `:root` mit Dunkelmodus.
 
 ## Links
 

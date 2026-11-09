@@ -21,7 +21,7 @@
   --bg:#f2f2f7; --card:#ffffff; --card2:#f2f2f7; --fill:rgba(118,118,128,.12); --fill2:rgba(118,118,128,.08);
   --label:#000000; --label2:rgba(60,60,67,.6); --label3:rgba(60,60,67,.3); --sep:rgba(60,60,67,.2);
   --blue:#0a84ff; --green:#30d158; --orange:#ff9f0a; --red:#ff453a; --pink:#ff375f; --purple:#bf5af2; --teal:#40c8e0; --indigo:#5e5ce6;
-  --ring-k:#ff375f; --ring-p:#30d158; --ring-c:#5ac8fa;
+  --ring-k:#0a84ff; --ring-p:#30d158; --ring-c:#ff9f0a;
   --bar:rgba(249,249,249,.88); --shadow:0 1px 2px rgba(0,0,0,.04);
   --sf:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
   --sfd:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
@@ -32,12 +32,12 @@
   --bg:#000000; --card:#1c1c1e; --card2:#2c2c2e; --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.16);
   --label:#ffffff; --label2:rgba(235,235,245,.6); --label3:rgba(235,235,245,.3); --sep:rgba(84,84,88,.65);
   --blue:#0a84ff; --green:#30d158; --orange:#ff9f0a; --red:#ff453a; --pink:#ff375f; --purple:#bf5af2; --teal:#40c8e0; --indigo:#5e5ce6;
-  --ring-k:#ff375f; --ring-p:#30d158; --ring-c:#64d2ff; --bar:rgba(22,22,24,.86); --shadow:none; color-scheme:dark }}
+  --ring-k:#0a84ff; --ring-p:#30d158; --ring-c:#ff9f0a; --bar:rgba(22,22,24,.86); --shadow:none; color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#000000; --card:#1c1c1e; --card2:#2c2c2e; --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.16);
   --label:#ffffff; --label2:rgba(235,235,245,.6); --label3:rgba(235,235,245,.3); --sep:rgba(84,84,88,.65);
   --blue:#0a84ff; --green:#30d158; --orange:#ff9f0a; --red:#ff453a; --pink:#ff375f; --purple:#bf5af2; --teal:#40c8e0; --indigo:#5e5ce6;
-  --ring-k:#ff375f; --ring-p:#30d158; --ring-c:#64d2ff; --bar:rgba(22,22,24,.86); --shadow:none; color-scheme:dark }
+  --ring-k:#0a84ff; --ring-p:#30d158; --ring-c:#ff9f0a; --bar:rgba(22,22,24,.86); --shadow:none; color-scheme:dark }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html,body{margin:0}
@@ -76,6 +76,14 @@ main{max-width:680px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 1
 .row .r b{color:var(--label);font-weight:600}
 .chev{width:8px;height:13px;color:var(--label3);flex:none}
 .tint{color:var(--blue)}
+/* Tacho */
+.gauge{padding:16px 16px 4px;text-align:center}
+.gauge svg{width:100%;max-width:290px;height:auto;display:block;margin:0 auto}
+.macro3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:6px 16px 16px}
+.macro3 .k{font-size:12px;color:var(--label2);font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+.macro3 .v{font-family:var(--sfr);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.macro3 .v small{font-size:13px;color:var(--label2);font-weight:600}
+.macro3 .bar8{margin-top:6px;height:8px}
 /* Ringe */
 .rings{display:grid;grid-template-columns:132px minmax(0,1fr);gap:18px;align-items:center;padding:16px}
 .rings svg{width:132px;height:132px;display:block}
@@ -391,7 +399,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
 <body>
 <main id="main"></main>
 <div class="tabbar"><nav role="tablist" id="tabs" aria-label="Bereiche">
-  <button role="tab" data-tab="heute" aria-selected="true"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="14" cy="14" r="11"/><circle cx="14" cy="14" r="6.5"/><circle cx="14" cy="14" r="2" fill="currentColor" stroke="none"/></svg>Heute</button>
+  <button role="tab" data-tab="heute" aria-selected="true"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 20a10 10 0 0 1 20 0"/><path d="M14 20l5-6"/><circle cx="14" cy="20" r="1.8" fill="currentColor" stroke="none"/></svg>Heute</button>
   <button role="tab" data-tab="kochen" aria-selected="false"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h18v7a5 5 0 0 1-5 5h-8a5 5 0 0 1-5-5z"/><path d="M2.5 12h23"/><path d="M10 8.5c0-1.5 1-1.5 1-3M14 8.5c0-1.5 1-1.5 1-3M18 8.5c0-1.5 1-1.5 1-3"/></svg>Kochen</button>
   <button role="tab" data-tab="einkauf" aria-selected="false"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h3.2l2.6 13h12.4l2.3-9.5H7.4"/><circle cx="10.5" cy="22.5" r="1.8"/><circle cx="19.5" cy="22.5" r="1.8"/></svg>Einkauf</button>
   <button role="tab" data-tab="analyse" aria-selected="false"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 23V15M12 23V8M18 23v-6M24 23V5"/></svg>Analyse</button>
@@ -757,6 +765,16 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     return s;
   }
   function hasLog(k){var l=state.log[k];return !!(l&&((l.e&&Object.keys(l.e).length)||(l.x&&l.x.length)))}
+  function gaugeSvg(eat,goalK){
+    var f=goalK?eat/goalK:0, ff=Math.max(0,Math.min(1,f)), cx=127, cy=130, r=100, ang=Math.PI*(1-ff);
+    var x=cx+r*Math.cos(ang), y=cy-r*Math.sin(ang), col=f>1.1?'var(--orange)':'var(--ring-k)';
+    var s='<svg viewBox="0 0 254 152" role="img" aria-label="'+nf0.format(eat)+' von '+nf0.format(goalK)+' kcal">';
+    s+='<path d="M27 130 A100 100 0 0 1 227 130" fill="none" style="stroke:var(--fill)" stroke-width="20" stroke-linecap="round"/>';
+    if(ff>0.005) s+='<path d="M27 130 A100 100 0 0 1 '+x.toFixed(1)+' '+y.toFixed(1)+'" fill="none" style="stroke:'+col+';transition:all .4s" stroke-width="20" stroke-linecap="round"/>';
+    s+='<text x="127" y="112" text-anchor="middle" style="fill:var(--label);font-family:var(--sfr);font-size:38px;font-weight:800">'+nf0.format(eat)+'</text>';
+    s+='<text x="127" y="136" text-anchor="middle" style="fill:var(--label2);font-family:var(--sf);font-size:14px">von '+nf0.format(goalK)+' kcal</text></svg>';
+    return s;
+  }
   function ringsSvg(vals){
     var R0=[58,43,28], cols=['var(--ring-k)','var(--ring-p)','var(--ring-c)'], s='<svg viewBox="0 0 132 132" role="img" aria-label="Fortschritt Kalorien, Protein, Kohlenhydrate">';
     vals.forEach(function(v,i){var r=R0[i],c=2*Math.PI*r,p=Math.max(0,Math.min(1,v));
@@ -843,10 +861,8 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     var title=heuteOffset===0?'Heute':heuteOffset===-1?'Gestern':heuteOffset===1?'Morgen':DAYS[d];
     var sub=date.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});
     var h=head(title,esc(sub),'<div class="navbtns"><button class="circ" data-act="day" data-n="-1" aria-label="Tag zurück"'+(heuteOffset<=-30?' disabled':'')+'>'+ICON.left+'</button><button class="circ" data-act="day" data-n="1" aria-label="Tag vor"'+(heuteOffset>=6?' disabled':'')+'>'+ICON.right+'</button></div>');
-    h+='<section class="sec"><div class="card"><div class="rings">'+ringsSvg([eat[0]/G[0],eat[1]/G[1],eat[2]/G[2]])+'<div class="legend">'+
-      '<div class="lg k1"><div class="k">Kalorien</div><div class="v">'+nf0.format(eat[0])+'<small> / '+nf0.format(G[0])+'</small></div></div>'+
-      '<div class="lg k2"><div class="k">Protein</div><div class="v">'+nf0.format(eat[1])+'<small> / '+G[1]+' g</small></div></div>'+
-      '<div class="lg k3"><div class="k">Carbs</div><div class="v">'+nf0.format(eat[2])+'<small> / '+G[2]+' g</small></div></div></div></div>'+
+    var mb=function(lbl,v,g,col,u){return '<div><div class="k">'+lbl+'</div><div class="v">'+nf0.format(v)+'<small> / '+nf0.format(g)+(u||' g')+'</small></div><div class="bar8"><i style="width:'+Math.min(100,g?v/g*100:0)+'%;background:'+col+'"></i></div></div>'};
+    h+='<section class="sec"><div class="card"><div class="gauge">'+gaugeSvg(eat[0],G[0])+'</div><div class="macro3">'+mb('Protein',eat[1],G[1],'var(--ring-p)')+mb('Carbs',eat[2],G[2],'var(--ring-c)')+mb('Fett',eat[3],G[3],'var(--purple)')+'</div>'+
       '<div class="left"><span>Noch offen</span><span><b class="num">'+nf0.format(Math.max(0,G[0]-eat[0]))+' kcal</b> · <b class="num">'+nf0.format(Math.max(0,G[1]-eat[1]))+' g</b> Protein</span></div></div></section>';
     h+=reviewCard(k,d);
     if(heuteOffset>=0) h+=suggestHtml(k,d);
