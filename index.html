@@ -705,7 +705,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     state.journal=state.journal.filter(function(j){return j.d>=cut});
     var cut2=iso(addDays(new Date(),-60));Object.keys(state.dayMenu).forEach(function(k){if(k<cut2)delete state.dayMenu[k]});Object.keys(state.cook||{}).forEach(function(k){if(k<cut2)delete state.cook[k]});
   }
-  function commit(){state.updatedAt=Date.now();saveLocal();schedulePush()}
+  function commit(){state.updatedAt=Date.now();saveLocal();schedulePush();cloudSchedule()}
   function schedulePush(){if(!ref)return;clearTimeout(pushTimer);pushTimer=setTimeout(push,800)}
   function push(){
     if(!ref)return;
@@ -737,6 +737,59 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
       },function(){clearTimeout(timer);ref=null;setSync('off','Nur dieses Gerät')});
     }catch(e){setSync('off','Nur dieses Gerät')}
   })();
+
+  /* ---------- Cloud-Sync (Supabase, nur außerhalb von Claude) ---------- */
+  var SUPA_URL='', SUPA_KEY='';
+  var SYNC_LS='aufbau-sync', cloud={busy:false,again:false,timer:null,pulled:false,keyInput:false};
+  function syncKey(){try{return (JSON.parse(localStorage.getItem(SYNC_LS)||'{}')||{}).key||''}catch(e){return ''}}
+  function setSyncKey(k){try{if(k)localStorage.setItem(SYNC_LS,JSON.stringify({key:k}));else localStorage.removeItem(SYNC_LS)}catch(e){}}
+  if(/^#sync=/.test(location.hash||'')){var hk=decodeURIComponent(location.hash.slice(6));if(hk.length>=32){setSyncKey(hk)}try{history.replaceState(null,'','#analyse')}catch(e){location.hash='analyse'}}
+  function cloudAvail(){return !IN_CLAUDE&&!!SUPA_URL&&!!SUPA_KEY}
+  function cloudReady(){return cloudAvail()&&!!syncKey()}
+  function supaHeaders(){var h={'Content-Type':'application/json','apikey':SUPA_KEY};if(/^eyJ/.test(SUPA_KEY))h.Authorization='Bearer '+SUPA_KEY;return h}
+  async function rpc(fn,body){
+    var ctl=('AbortController' in window)?new AbortController():null,tm=setTimeout(function(){if(ctl)ctl.abort()},12000);
+    try{var r=await fetch(SUPA_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:supaHeaders(),body:JSON.stringify(body),signal:ctl?ctl.signal:undefined});if(!r.ok)throw new Error('HTTP '+r.status);var tx=await r.text();return tx?JSON.parse(tx):null}finally{clearTimeout(tm)}
+  }
+  async function cloudPull(quiet){
+    if(!cloudReady()) return;
+    try{
+      var res=await rpc('aufbau_get',{p_key:syncKey()}); cloud.pulled=true;
+      if(res&&res.data&&(res.updatedAt||0)>(state.updatedAt||0)){state=normalize(res.data);saveLocal();render();if(!quiet)toast('Vom anderen Gerät aktualisiert')}
+      else if(!res||(state.updatedAt||0)>(res.updatedAt||0)){await cloudPushNow()}
+      setSync('ok','Synchronisiert');
+    }catch(e){setSync('off','Sync offline')}
+  }
+  async function cloudPushNow(){
+    if(!cloudReady()||!cloud.pulled) return;
+    if(cloud.busy){cloud.again=true;return}
+    cloud.busy=true;
+    try{prune();var snap=JSON.parse(JSON.stringify(state));var r=await rpc('aufbau_put',{p_key:syncKey(),p_data:snap,p_updated:snap.updatedAt||0});
+      if(typeof r==='number'&&r>(snap.updatedAt||0)){cloud.busy=false;await cloudPull(false);return}
+      setSync('ok','Synchronisiert');
+    }catch(e){setSync('off','Sync offline')}
+    cloud.busy=false; if(cloud.again){cloud.again=false;cloudPushNow()}
+  }
+  function cloudSchedule(){if(!cloudReady())return;clearTimeout(cloud.timer);cloud.timer=setTimeout(cloudPushNow,1500)}
+  function newSyncKey(){var b=new Uint8Array(24);crypto.getRandomValues(b);var s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+  function syncLink(){return location.origin+location.pathname+'#sync='+encodeURIComponent(syncKey())}
+  if(cloudReady()){syncTxt='Verbinde…';setTimeout(function(){cloudPull(true)},50);setInterval(function(){if(document.visibilityState==='visible')cloudPull(false)},60000)}
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&cloudReady())cloudPull(false)});
+  function cloudHtml(){
+    if(IN_CLAUDE) return '';
+    var h='<section class="sec"><div class="sec-h"><span>Cloud-Sync</span></div>';
+    if(!cloudAvail()) return h+'<div class="card pad" style="font-size:15px;color:var(--label2)">Wird gerade eingerichtet. Bis dahin sichert „Backup kopieren“ deine Daten.</div></section>';
+    if(!syncKey()){
+      h+='<div class="list"><button class="row" data-act="sync-on"><span class="ic-tile sm" aria-hidden="true">☁️</span><span class="main"><span class="t tint">Cloud-Sync einschalten</span><span class="s">Daten sichern und auf dem Laptop nutzen</span></span>'+ICON.chev+'</button><button class="row" data-act="sync-join"><span class="ic-tile sm" aria-hidden="true">🔑</span><span class="main"><span class="t tint">Mit Schlüssel verbinden</span><span class="s">Wenn der Sync auf einem anderen Gerät schon läuft</span></span>'+ICON.chev+'</button></div>';
+    }else{
+      h+='<div class="list"><div class="row"><span class="ic-tile sm" aria-hidden="true">☁️</span><span class="main"><span class="t">Sync ist an</span><span class="s">'+esc(syncTxt)+'. Änderungen werden automatisch gesichert.</span></span></div>'+
+        '<button class="row" data-act="sync-link"><span class="ic-tile sm" aria-hidden="true">💻</span><span class="main"><span class="t tint">Link für anderes Gerät kopieren</span><span class="s">Auf dem Laptop öffnen, fertig</span></span>'+ICON.chev+'</button>'+
+        '<button class="row" data-act="sync-now"><span class="ic-tile sm" aria-hidden="true">🔄</span><span class="main"><span class="t tint">Jetzt abgleichen</span></span></button>'+
+        '<button class="row" data-act="sync-off"><span class="main"><span class="t" style="color:var(--red)">Sync auf diesem Gerät ausschalten</span><span class="s">Deine Daten bleiben hier und in der Cloud erhalten</span></span></button></div>';
+    }
+    if(cloud.keyInput) h+='<form class="card pad" id="syncform" style="margin-top:10px"><input class="tf" id="synckey" placeholder="Sync-Schlüssel einfügen" aria-label="Sync-Schlüssel" autocomplete="off"><div class="btnrow" style="margin-top:10px"><button class="btn fill small" type="submit">Verbinden</button><button class="btn small" type="button" data-act="sync-join-cancel">Abbrechen</button></div><div class="sec-f" style="margin:8px 0 0">Achtung: Die Daten auf diesem Gerät werden durch die aus der Cloud ersetzt.</div></form>';
+    return h+'<div class="sec-f">Der Link enthält deinen geheimen Schlüssel. Gib ihn nicht weiter.</div></section>';
+  }
 
   /* ---------- Navigation ---------- */
   var VIEWS=['heute','kochen','einkauf','analyse'];
@@ -1525,6 +1578,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     h+=remHtml();
     h+='<section class="sec"><div class="sec-h"><span>Einstellungen</span></div><div class="card pad"><div class="sec-h" style="margin:0 0 8px">Kalorienstufe</div><div class="seg">'+STEPS.map(function(s,i){return '<button data-act="step" data-s="'+i+'" aria-pressed="'+(state.step===i)+'">'+s.n+'</button>'}).join('')+'</div><div class="sec-f" style="margin:8px 2px 0">'+esc(STEPS[state.step].d)+'</div></div>'+
       '<div class="list" style="margin-top:10px"><div class="field"><label for="train">Training um</label><select id="train" data-act="train">'+['16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00'].map(function(t){return '<option'+(t===state.train?' selected':'')+'>'+t+'</option>'}).join('')+'</select></div></div><div class="sec-f">Die Mahlzeit vor dem Training kommt 2 Stunden vorher, das Abendessen 90 Minuten danach.</div></section>';
+    h+=cloudHtml();
     h+='<section class="sec"><div class="sec-h"><span>Daten</span></div><div class="list"><button class="row" data-act="bk-copy"><span class="main"><span class="t tint">Backup kopieren</span></span></button><button class="row" data-act="bk-paste"><span class="main"><span class="t tint">Backup einfügen</span></span></button></div>'+
       (backupMode==='paste'?'<div class="card pad" style="margin-top:10px"><textarea class="copybox" id="bk-in" style="margin:0;background:var(--fill)" placeholder="Backup hier einfügen" aria-label="Backup einfügen"></textarea><div class="btnrow" style="margin-top:10px"><button class="btn fill small" data-act="bk-apply">Übernehmen</button><button class="btn small" data-act="bk-cancel">Abbrechen</button></div><div class="sec-f" style="margin:8px 0 0">Ersetzt alle Daten in der App.</div></div>':'')+
       (backupMode==='show'?'<textarea class="copybox" id="bk-out" readonly aria-label="Backup">'+esc(JSON.stringify(state))+'</textarea>':'')+
@@ -1597,6 +1651,12 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(a==='all'){var l2=logOf(k,true);dayMeals(d,k).forEach(function(x){if(x.rid&&!l2.e[x.slot]){var m2=macros(x.rid);l2.e[x.slot]={r:x.rid,m:m2};jlog(k,'meal',SLOTNAME[x.slot]+': '+R[x.rid].n,m2[0],m2[1])}});commit();render();return}
     if(a==='quick'){var q=QUICK[+b.dataset.i];logOf(k,true).x.push({n:q[0],k:q[1],p:q[2]});jlog(k,'extra',q[0],q[1],q[2]);commit();if(sheetMode==='add')closeSheet();render();toast(q[0]+' hinzugefügt');return}
     if(a==='add-open'){openAdd();return}
+    if(a==='sync-on'){setSyncKey(newSyncKey());cloud.pulled=true;state.updatedAt=state.updatedAt||Date.now();setSync('','Verbinde…');cloudPushNow().then(function(){render();toast('Cloud-Sync ist an')});render();return}
+    if(a==='sync-join'){cloud.keyInput=true;render();var sk=document.getElementById('synckey');if(sk)sk.focus();return}
+    if(a==='sync-join-cancel'){cloud.keyInput=false;render();return}
+    if(a==='sync-link'){var ln=syncLink();copy(ln,function(){toast('Link kopiert, am Laptop öffnen')},function(){toast('Kopieren ging nicht')});return}
+    if(a==='sync-now'){cloudPull(false);return}
+    if(a==='sync-off'){setSyncKey('');cloud.pulled=false;setSync('','Auf diesem Gerät');render();toast('Sync ausgeschaltet');return}
     if(a==='timer'){startTimer(+b.dataset.min,b.dataset.label||'Timer');return}
     if(a==='water'){var lw=logOf(k,true);lw.w=Math.max(0,(lw.w||0)+(+b.dataset.ml));if(+b.dataset.ml>0&&lw.w>=WATER_GOAL&&lw.w-(+b.dataset.ml)<WATER_GOAL){jlog(k,'set','Wasserziel erreicht');toast('Wasserziel erreicht 💧')}commit();render();return}
     if(a==='supp'){var ls=logOf(k,true);ls.s=ls.s||{};var nm=b.dataset.s==='k'?'Kreatin':'Vitamin D3';if(ls.s[b.dataset.s]){delete ls.s[b.dataset.s];jlog(k,'set-off',nm+' wieder entfernt')}else{ls.s[b.dataset.s]=1;jlog(k,'set',nm+' genommen')}commit();render();return}
@@ -1674,6 +1734,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
       offSearch(q).then(function(items){if(items===null){scan={stage:'ask',btn:'retry',pendingEan:null,msg:'Die Suche ist gerade nicht erreichbar. Versuch es gleich nochmal oder scanne den Barcode.'}}else scan={stage:'results',q:q,items:items};render()});
       return;
     }
+    if(e.target.id==='syncform'){var kv=(document.getElementById('synckey').value||'').trim().replace(/^.*#sync=/,'');if(kv.length<32){toast('Das ist kein gültiger Schlüssel');return}setSyncKey(decodeURIComponent(kv));cloud.keyInput=false;cloud.pulled=false;setSync('','Verbinde…');state.updatedAt=0;cloudPull(false);render();return}
     if(e.target.id==='xform'){
       var n=document.getElementById('xn').value.trim()||'Extra', kc=parseFloat(document.getElementById('xk').value), p=parseFloat(document.getElementById('xp').value)||0;
       if(!isFinite(kc)||kc<=0) return;

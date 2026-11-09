@@ -61,6 +61,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Datenversion `v:3`. Beim Umstieg von älteren Versionen wird der alte Stand einmal unter `aufbau-plan-v1-sicherung` gesichert. Änderungen am Datenmodell immer abwärtskompatibel machen, nie Felder löschen, die Matzes Einträge enthalten.
 - Tagesziel ist fix: 2.800 kcal plus 150 je Kalorienstufe, 160 g Protein. Der Vorschlag auf Heute sucht die beste Kombination der offenen frischen Mahlzeiten (Mittag bleibt fest, weil vorgekocht).
 - Scanner auf GitHub Pages: `vendor/barcode-detector.js` (zxing-cpp als WebAssembly, `vendor/zxing_reader.wasm`), Live-Bild mit Drehsperre. Produktsuche per Name über Open Food Facts.
+- Cloud-Sync (nur GitHub-Version): Supabase, Tabelle `aufbau_sync` mit den RPC-Funktionen `aufbau_get` und `aufbau_put` (`supabase/schema.sql`). Zugriff nur mit geheimem Sync-Schlüssel (localStorage `aufbau-sync`, 32 Zeichen), in der Datenbank nur als SHA-256 gespeichert. `SUPA_URL` und `SUPA_KEY` (öffentlicher Schlüssel) stehen in `index.html`. Letzter Stand gewinnt per `updatedAt`. Anderes Gerät verbinden über Link mit `#sync=schlüssel`.
 - Daten zwischen Claude-Version und GitHub-Version übertragen: Analyse, dann Backup kopieren und einfügen.
 - Ruhetage: Ziel 200 kcal und 50 g Kohlenhydrate niedriger (`goal(k,d)`).
 - Timer: Zeiten wie „15 Minuten“ in Rezept- und Kochschritten werden zu Timer-Buttons (`timerize`). Timer oben als Pille, Ton per WebAudio, Bildschirm bleibt an (Wake Lock). Läuft nur zuverlässig bei offener App.
@@ -81,5 +82,4 @@ Noch nicht entschieden, Matze wählt aus:
 - Haken für Kreatin und Vitamin D
 - Bauchumfang wöchentlich
 - Eigene Rezepte anlegen und bearbeiten
-- Sync mit dem Laptop (zum Beispiel Supabase)
 - Fitbit und Apple Health (nur mit nativer iOS-App möglich)
