@@ -58,13 +58,15 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
   - `prices`, `vorrat`, `extras`, `shop`, `cook`
   - pro Tag zusätzlich in `log[datum]`: `w` (Wasser in ml), `s` ({k: Kreatin, d: Vitamin D}), `t` (Training erledigt), `rest` (true/false überschreibt Trainingstage)
   - `body` Körpermaße je Datum
+  - `custom = {id: {n, s, t, e, ing: [[artikelId, menge]], st: [schritte]}}` eigene Rezepte, `citems = {id: {n, a, u, p, pl, pr, nut: [kcal,P,C,F]}}` eigene Zutaten
   - `tdays` Trainingstage (0 = Montag), `rem` Erinnerungen {id: {on, t}}, `rv` ausgeblendete Wochenrückblicke
 - Datenversion `v:3`. Beim Umstieg von älteren Versionen wird der alte Stand einmal unter `aufbau-plan-v1-sicherung` gesichert. Änderungen am Datenmodell immer abwärtskompatibel machen, nie Felder löschen, die Matzes Einträge enthalten.
 - Tagesziel ist fix: 2.800 kcal plus 150 je Kalorienstufe, 160 g Protein. Der Vorschlag auf Heute sucht die beste Kombination der offenen frischen Mahlzeiten (Mittag bleibt fest, weil vorgekocht).
 - Scanner auf GitHub Pages: `vendor/barcode-detector.js` (zxing-cpp als WebAssembly, `vendor/zxing_reader.wasm`), Live-Bild mit Drehsperre. Produktsuche per Name über Open Food Facts.
 - Cloud-Sync (nur GitHub-Version): Supabase, Tabelle `aufbau_sync` mit den RPC-Funktionen `aufbau_get` und `aufbau_put` (`supabase/schema.sql`). Zugriff nur mit geheimem Sync-Schlüssel (localStorage `aufbau-sync`, 32 Zeichen), in der Datenbank nur als SHA-256 gespeichert. `SUPA_URL` und `SUPA_KEY` (öffentlicher Schlüssel) stehen in `index.html`. Letzter Stand gewinnt per `updatedAt`. Anderes Gerät verbinden über Link mit `#sync=schlüssel`.
 - Daten zwischen Claude-Version und GitHub-Version übertragen: Analyse, dann Backup kopieren und einfügen.
-- Körper: Wochen-Check (sonntags und montags Karte unter Heute) mit Bauch, Brust, Oberarm, Oberschenkel in `body[datum] = {w,c,a,t}` und Fortschrittsfoto. Fotos verkleinert (900 px, JPEG) lokal in IndexedDB `aufbau-fotos` und bei Sync in Supabase-Tabelle `aufbau_photos` (`supabase/photos.sql`, RPCs `aufbau_photo_put/days/get/del`). Analyse zeigt Maße, Verlauf, Fotos mit Vergleich zum ersten Foto und Einschätzung Bauch gegen Gewicht.
+- Körper: Wochen-Check (nur sonntags Karte unter Heute) mit Bauch, Brust, Oberarm, Oberschenkel in `body[datum] = {w,c,a,t}` und Fortschrittsfoto. Fotos verkleinert (900 px, JPEG) lokal in IndexedDB `aufbau-fotos` und bei Sync in Supabase-Tabelle `aufbau_photos` (`supabase/photos.sql`, RPCs `aufbau_photo_put/days/get/del`). Analyse zeigt Maße, Verlauf, Fotos mit Vergleich zum ersten Foto und Einschätzung Bauch gegen Gewicht.
+- Eigene Rezepte: Editor-Sheet (Tab Kochen „Eigenes Rezept anlegen“, Auswahl „Neues Gericht anlegen“, im Rezept „Bearbeiten“ bzw. „Als eigenes kopieren“). Makros rechnen sich aus `NUT`. Neue Zutaten mit Nährwerten (auf GitHub Pages mit Suche in Open Food Facts), Gang, Packung und Preis. `registerCustom()` trägt sie beim Laden in `I`, `NUT`, `R`, `EMO` und `SLOTOPTS` ein, damit sie in Planen, Einkauf, Meal Prep, Auswahl und Vorschlag auftauchen. Beim Löschen werden Wochenplan und Tagesänderungen auf ein festes Gericht zurückgesetzt, gegessene Einträge bleiben.
 - Ruhetage: Ziel 200 kcal und 50 g Kohlenhydrate niedriger (`goal(k,d)`).
 - Timer: Zeiten wie „15 Minuten“ in Rezept- und Kochschritten werden zu Timer-Buttons (`timerize`). Timer oben als Pille, Ton per WebAudio, Bildschirm bleibt an (Wake Lock). Läuft nur zuverlässig bei offener App.
 - Erinnerungen (`REM`): Kalender-Export als .ics und Push. Push: Die App erzeugt VAPID-Schlüssel im Browser (localStorage `aufbau-push`), abonniert Push und erzeugt einen Code. Matze legt ihn als Repository-Secret `PUSH_CONFIG` an. `.github/workflows/push.yml` läuft alle 10 Minuten und schickt fällige Erinnerungen mit `push/send.mjs` (web-push). Claude darf keine Secrets setzen, das macht Matze selbst.
@@ -81,5 +83,4 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 
 Noch nicht entschieden, Matze wählt aus:
 
-- Eigene Rezepte anlegen und bearbeiten
 - Fitbit und Apple Health (nur mit nativer iOS-App möglich)

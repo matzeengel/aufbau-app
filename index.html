@@ -95,6 +95,12 @@ main{max-width:680px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 1
 .cmp img{width:100%;border-radius:12px;display:block;aspect-ratio:3/4;object-fit:cover;background:var(--fill)}
 .cmp figcaption{font-size:13px;color:var(--label2);text-align:center;margin-top:4px}
 .preview{width:120px;border-radius:12px;display:block;margin-top:10px}
+/* Rezept-Editor */
+.emos-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px;padding:12px 16px}
+.emos-pick button{height:42px;border-radius:10px;border:0;background:var(--fill);font-size:22px}
+.emos-pick button[aria-pressed="true"]{background:var(--blue)}
+.re-res{max-height:280px;overflow:auto}
+.ta{width:100%;min-height:120px;border:0;background:var(--fill);border-radius:10px;padding:10px 12px;font-size:16px;resize:vertical}
 /* Tacho */
 .gauge{padding:16px 16px 4px;text-align:center}
 .gauge svg{width:100%;max-width:290px;height:auto;display:block;margin:0 auto}
@@ -614,17 +620,34 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     for(var d=0;d<7;d++){m.f.push('fruehstueck');m.m.push(p[d<=3?0:1]);m.b.push('bowl');m.a.push(R[din[d]]&&R[din[d]].s==='a'?din[d]:DEF_DINNER[d])}
     return m;
   }
-  function blank(){return {v:3,updatedAt:0,plan:'A',menu:defaultMenu('A'),dayMenu:{},step:0,train:'18:30',prices:{},vorrat:{},extras:{},shop:{},log:{},weights:{},wtime:{},products:{},journal:[],cook:{},tdays:[0,1,2,3,4,5],rem:{},rv:{},amt:{},body:{}}}
+  /* Eigene Zutaten (citems) und Rezepte (custom) in I, NUT, R, EMO und SLOTOPTS eintragen */
+  var customReg={r:[],i:[]};
+  function calcMacros(ing){var m=[0,0,0,0];ing.forEach(function(g){var pu=perUnit(g[0],g[2]);if(!pu||g[1]==null)return;for(var j=0;j<4;j++)m[j]+=pu[j]*g[1]});return m.map(function(v){return Math.round(v)})}
+  function registerCustom(s){
+    var hasKeys=typeof KEYS!=='undefined'&&KEYS;
+    customReg.i.forEach(function(id){delete I[id];delete NUT[id];if(hasKeys){var ix=KEYS.indexOf(id);if(ix>=0)KEYS.splice(ix,1)}});
+    customReg.r.forEach(function(id){delete R[id];delete EMO[id];['f','m','b','a'].forEach(function(sl){var ix=SLOTOPTS[sl].indexOf(id);if(ix>=0)SLOTOPTS[sl].splice(ix,1)})});
+    customReg={r:[],i:[]};
+    Object.keys(s.citems||{}).forEach(function(id){var c=s.citems[id];if(!c||!c.n||!Array.isArray(c.nut))return;I[id]=[c.n,AN[c.a]?c.a:'trocken',c.u||'g',+c.p||100,c.pl||((+c.p||100)+' '+(c.u||'g')),+c.pr||0,'w'];NUT[id]=c.nut.map(function(v){return +v||0});if(hasKeys)KEYS.push(id);customReg.i.push(id)});
+    Object.keys(s.custom||{}).forEach(function(id){var c=s.custom[id];if(!c||!c.n||['f','m','b','a'].indexOf(c.s)<0||!Array.isArray(c.ing))return;
+      var ing=c.ing.filter(function(g){return I[g[0]]&&NUT[g[0]]}).map(function(g){return [g[0],+g[1]||0,I[g[0]][2],I[g[0]][0]]});
+      R[id]={n:c.n,s:c.s,t:+c.t||15,m:calcMacros(ing),ing:ing,st:(c.st&&c.st.length)?c.st:['Nach Gefühl zubereiten.'],own:true};
+      EMO[id]=c.e||'🍽️';SLOTOPTS[c.s].push(id);customReg.r.push(id)});
+  }
+  function blank(){return {v:3,updatedAt:0,plan:'A',menu:defaultMenu('A'),dayMenu:{},step:0,train:'18:30',prices:{},vorrat:{},extras:{},shop:{},log:{},weights:{},wtime:{},products:{},journal:[],cook:{},tdays:[0,1,2,3,4,5],rem:{},rv:{},amt:{},body:{},custom:{},citems:{}}}
   function normalize(s){
     var b=blank();
     if(!s||typeof s!=='object') return b;
+    if(!s.custom||typeof s.custom!=='object'||Array.isArray(s.custom)) s.custom={};
+    if(!s.citems||typeof s.citems!=='object'||Array.isArray(s.citems)) s.citems={};
+    registerCustom(s);
     if(!PLANS[s.plan]) s.plan='A';
     if(!s.menu||typeof s.menu!=='object') s.menu=defaultMenu(s.plan,s.dinner);
     var dm=defaultMenu(s.plan,s.dinner);
     Object.keys(b).forEach(function(k){if(s[k]===undefined)s[k]=b[k]});
     SLOTS.forEach(function(sl){var arr=(Array.isArray(s.menu[sl])&&s.menu[sl].length===7)?s.menu[sl]:dm[sl];s.menu[sl]=arr.map(function(r,d){return R[r]&&R[r].s===sl?r:dm[sl][d]})});
     s.step=Math.max(0,Math.min(3,+s.step||0));
-    ['prices','vorrat','extras','shop','log','weights','wtime','products','dayMenu','cook','rem','rv','amt','body'].forEach(function(k){if(!s[k]||typeof s[k]!=='object'||Array.isArray(s[k]))s[k]={}});
+    ['prices','vorrat','extras','shop','log','weights','wtime','products','dayMenu','cook','rem','rv','amt','body','custom','citems'].forEach(function(k){if(!s[k]||typeof s[k]!=='object'||Array.isArray(s[k]))s[k]={}});
     if(!Array.isArray(s.journal)) s.journal=[];
     if(!Array.isArray(s.tdays)) s.tdays=[0,1,2,3,4,5]; s.tdays=s.tdays.filter(function(x){return x>=0&&x<=6});
     if(!s.top||typeof s.top!=='object'||Array.isArray(s.top)) s.top={};
@@ -991,6 +1014,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     var h='<div class="grab"></div><div class="s-top"><button data-act="close">Fertig</button></div><h2 class="s-title" id="s-title">'+esc(SLOTSHORT[slot])+'</h2><div class="s-sub">'+esc(dt.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'}))+(eaten?' · schon gegessen, du kannst es korrigieren':'')+'</div>';
     h+='<section class="sec"><div class="list">'+rows.map(row).join('')+'</div>'+(slot==='m'?'<div class="sec-f">Mittag ist vorgekocht. Die Auswahl hier gilt nur für diesen Tag. Was du am Sonntag und Mittwoch kochst, stellst du unter Einkauf, Planen ein.</div>':'<div class="sec-f">Die Auswahl gilt nur für diesen Tag. Deinen Wochenplan stellst du unter Einkauf, Planen ein.</div>')+'</section>';
     var groups=[['m','Aus dem Meal Prep'],['a','Abendessen'],['f','Frühstück'],['b','Snacks']].filter(function(g){return g[0]!==slot});
+    h+='<section class="sec"><div class="list"><button class="row addrow" data-act="re-open"><span class="plus" aria-hidden="true">+</span><span class="main"><span class="t">Neues Gericht anlegen</span></span></button></div></section>';
     groups.forEach(function(g){var rs=rows2.filter(function(x){return R[x.r].s===g[0]});if(!rs.length)return;
       h+='<section class="sec"><div class="sec-h"><span>'+g[1]+'</span></div><div class="list">'+rs.map(row).join('')+'</div>'+(g[0]==='m'&&slot!=='m'?'<div class="sec-f">Isst du ein Mittagsgericht auch abends, brauchst du beim Meal Prep eine Portion mehr.</div>':'')+'</section>';
     });
@@ -1302,6 +1326,71 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     return h;
   }
 
+  /* ---------- Eigene Rezepte ---------- */
+  var rEdit=null, EMOS=['🍽️','🥣','🍳','🥞','🥪','🌯','🍝','🍛','🍚','🥘','🍲','🥗','🥩','🍗','🐟','🥔','🍠','🌶️','🥦','🍌','🥜','🥤','🧀','🍕'];
+  function openREdit(fromRid,editId){
+    var base=fromRid?R[fromRid]:null;
+    if(editId&&state.custom[editId]){var c=state.custom[editId];rEdit={id:editId,n:c.n,s:c.s,t:c.t,e:c.e,ing:c.ing.map(function(g){return [g[0],g[1]]}),st:(c.st||[]).join('\n'),adding:false,q:'',ni:null}}
+    else if(base){rEdit={id:null,n:base.n+' (eigen)',s:base.s,t:base.t,e:EMO[fromRid]||'🍽️',ing:base.ing.filter(function(g){return g[0]&&NUT[g[0]]&&g[1]!=null}).map(function(g,i){return [g[0],ingAmt(fromRid,base.ing.indexOf(g))]}),st:base.st.join('\n'),adding:false,q:'',ni:null}}
+    else rEdit={id:null,n:'',s:'a',t:15,e:'🍽️',ing:[],st:'',adding:false,q:'',ni:null};
+    lastFocus=document.activeElement;sheetMode='redit';sheet.innerHTML=rEditHtml();showSheet();
+  }
+  function reIng(){return rEdit.ing.map(function(g){return I[g[0]]&&NUT[g[0]]?[g[0],g[1],I[g[0]][2],I[g[0]][0]]:[g[0],0,'g','(unbekannt)']})}
+  function reResults(){
+    var q=(rEdit.q||'').toLowerCase().trim(), ids=Object.keys(NUT).filter(function(id){return I[id]&&I[id][2]!=='x'&&(!q||I[id][0].toLowerCase().indexOf(q)>=0)}).sort(function(a,b){return I[a][0].localeCompare(I[b][0],'de')});
+    return ids.map(function(id){var n=NUT[id],u=I[id][2];return '<button class="row" data-act="re-pick" data-id="'+id+'"><span class="main"><span class="t">'+esc(I[id][0])+'</span><span class="s num">'+n[0]+' kcal · '+n[1]+' g P '+(u==='Stk'?'pro Stück':'pro 100 '+u)+'</span></span><span class="r tint" style="font-size:22px">+</span></button>'}).join('')||'<div class="row"><span class="main"><span class="s">Nichts gefunden. Leg die Zutat unten neu an.</span></span></div>';
+  }
+  function rEditHtml(){
+    var E=rEdit, ing=reIng(), m=calcMacros(ing);
+    var h='<div class="grab"></div><div class="s-top" style="justify-content:space-between"><button data-act="close">Abbrechen</button><button data-act="re-save">Sichern</button></div><h2 class="s-title" id="s-title">'+(E.id?'Rezept bearbeiten':'Eigenes Rezept')+'</h2>';
+    h+='<section class="sec"><div class="card macros"><div><div class="v c-k">'+m[0]+'</div><div class="k">kcal</div></div><div><div class="v c-p">'+m[1]+'</div><div class="k">Protein</div></div><div><div class="v c-c">'+m[2]+'</div><div class="k">Carbs</div></div><div><div class="v" style="color:var(--purple)">'+m[3]+'</div><div class="k">Fett</div></div></div><div class="sec-f">pro Portion, rechnet sich aus den Zutaten</div></section>';
+    h+='<section class="sec"><div class="list"><div class="field"><label for="re-n">Name</label><input id="re-n" data-re="n" value="'+esc(E.n)+'" placeholder="z. B. Pute mit Reis" style="width:60%;text-align:right"></div><div class="field"><label for="re-t">Zeit</label><input id="re-t" data-re="t" type="number" inputmode="numeric" value="'+esc(E.t)+'"><span class="unit">Min.</span></div></div></section>';
+    h+='<section class="sec"><div class="sec-h"><span>Mahlzeit</span></div><div class="seg">'+[['f','Frühstück'],['m','Mittag'],['b','Snack'],['a','Abend']].map(function(x){return '<button data-act="re-slot" data-s="'+x[0]+'" aria-pressed="'+(E.s===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'+(E.s==='m'?'<div class="sec-f">Mittagsgerichte werden vorgekocht und tauchen im Meal Prep auf.</div>':'')+'</section>';
+    h+='<section class="sec"><div class="sec-h"><span>Icon</span></div><div class="card emos-pick">'+EMOS.map(function(x){return '<button data-act="re-emo" data-e="'+x+'" aria-pressed="'+(E.e===x)+'" aria-label="Icon '+x+'">'+x+'</button>'}).join('')+'</div></section>';
+    h+='<section class="sec"><div class="sec-h"><span>Zutaten pro Portion</span></div><div class="list">'+ing.map(function(g,i){var u=g[2],txt=nf.format(g[1])+' '+u;return '<div class="row"><button class="minus" data-act="re-del" data-i="'+i+'" aria-label="'+esc(g[3])+' entfernen">'+ICON.minus+'</button><span class="main"><span class="t">'+esc(g[3])+'</span></span><div class="stepper"><button data-act="re-amt" data-i="'+i+'" data-dir="-1" aria-label="weniger">−</button><i></i><b style="min-width:62px">'+esc(txt)+'</b><i></i><button data-act="re-amt" data-i="'+i+'" data-dir="1" aria-label="mehr">+</button></div></div>'}).join('')+
+      '<button class="row addrow" data-act="re-add"><span class="plus" aria-hidden="true">+</span><span class="main"><span class="t">Zutat hinzufügen</span></span></button></div>';
+    if(E.adding){
+      h+='<div class="card" style="margin-top:10px"><div class="pad" style="padding-bottom:6px"><input class="tf" data-re="q" value="'+esc(E.q)+'" placeholder="Zutat suchen" aria-label="Zutat suchen" type="search"></div><div class="list re-res" id="re-res" style="box-shadow:none;border-radius:0">'+reResults()+'</div><div class="pad" style="padding-top:8px"><button class="btn small" data-act="re-newitem">Neue Zutat anlegen</button></div></div>';
+    }
+    if(E.ni){var N=E.ni;
+      h+='<div class="card pad" style="margin-top:10px"><b>Neue Zutat</b>'+(!IN_CLAUDE?'<div class="searchrow"><input class="tf" data-ni="q" value="'+esc(N.q||'')+'" placeholder="In Open Food Facts suchen" aria-label="Produkt suchen" type="search"><button class="btn small" data-act="ni-search">Suchen</button></div>'+(N.res?'<div class="list" style="margin-top:8px;box-shadow:none;background:var(--fill2)">'+(N.res.length?N.res.map(function(r,i){return '<button class="row" data-act="ni-use" data-i="'+i+'"><span class="main"><span class="t">'+esc(r.n)+'</span><span class="s num">'+r.k+' kcal · '+r.p+' g P pro 100 g</span></span></button>'}).join(''):'<div class="row"><span class="s">Nichts gefunden</span></div>')+'</div>':''):'')+
+        '<input class="tf" style="margin-top:10px" data-ni="n" value="'+esc(N.n||'')+'" placeholder="Name, z. B. Putenbrust" aria-label="Name der Zutat">'+
+        '<div class="seg" style="margin-top:10px">'+['g','ml','Stk'].map(function(u){return '<button data-act="ni-unit" data-u="'+u+'" aria-pressed="'+(N.u===u)+'">'+(u==='Stk'?'Stück':u)+'</button>'}).join('')+'</div>'+
+        '<div class="nut"><div><label>kcal</label><input class="tf" type="number" inputmode="decimal" data-ni="k" value="'+esc(N.k==null?'':N.k)+'"></div><div><label>Protein</label><input class="tf" type="number" inputmode="decimal" data-ni="p" value="'+esc(N.p==null?'':N.p)+'"></div><div><label>Carbs</label><input class="tf" type="number" inputmode="decimal" data-ni="c" value="'+esc(N.c==null?'':N.c)+'"></div><div><label>Fett</label><input class="tf" type="number" inputmode="decimal" data-ni="f" value="'+esc(N.f==null?'':N.f)+'"></div></div><div class="sec-f" style="margin:4px 2px 10px">'+(N.u==='Stk'?'pro Stück':'pro 100 '+N.u)+'</div>'+
+        '<div class="formgrid"><select class="tf wide" data-ni="a" aria-label="Gang im Laden">'+AISLES.filter(function(a){return ['haushalt','getraenke'].indexOf(a[0])<0}).map(function(a){return '<option value="'+a[0]+'"'+(N.a===a[0]?' selected':'')+'>'+esc(a[1])+'</option>'}).join('')+'</select><input class="tf" type="number" inputmode="decimal" data-ni="pk" value="'+esc(N.pk||'')+'" placeholder="Packung" aria-label="Packungsgröße"><input class="tf" type="number" inputmode="decimal" step="0.01" data-ni="pr" value="'+esc(N.pr||'')+'" placeholder="Preis €" aria-label="Preis"></div>'+
+        '<div class="btnrow" style="margin-top:10px"><button class="btn fill small" data-act="ni-save">Zutat speichern</button><button class="btn small" data-act="ni-cancel">Abbrechen</button></div></div>';
+    }
+    h+='</section>';
+    h+='<section class="sec"><div class="sec-h"><span>Zubereitung</span><span style="text-transform:none">ein Schritt pro Zeile</span></div><textarea class="ta" data-re="st" aria-label="Zubereitung" placeholder="z. B. Reis im Topf nach Packung kochen.">'+esc(E.st)+'</textarea><div class="sec-f">Zeiten wie „12 Minuten“ werden automatisch zu Timern.</div></section>';
+    if(E.id) h+='<section class="sec"><button class="btn red" data-act="re-delete" style="width:100%">Rezept löschen</button></section>';
+    return h;
+  }
+  function reRedraw(){var st=sheet.scrollTop;sheet.innerHTML=rEditHtml();sheet.scrollTop=st}
+  function reSave(){
+    var E=rEdit; if(!String(E.n||'').trim()){toast('Bitte einen Namen eingeben');return}
+    var ing=E.ing.filter(function(g){return I[g[0]]&&NUT[g[0]]&&+g[1]>0}); if(!ing.length){toast('Bitte mindestens eine Zutat hinzufügen');return}
+    var id=E.id||('c'+Date.now().toString(36));
+    state.custom[id]={n:String(E.n).trim().slice(0,60),s:E.s,t:Math.max(1,Math.min(240,+E.t||15)),e:E.e,ing:ing.map(function(g){return [g[0],Math.round(+g[1]*10)/10]}),st:String(E.st||'').split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,20)};
+    delete state.amt[id]; registerCustom(state);
+    jlog(iso(new Date()),'set',(E.id?'Rezept geändert: ':'Eigenes Rezept angelegt: ')+state.custom[id].n);
+    commit(); rEdit=null; closeSheet(); render(); toast(E.id?'Rezept gespeichert':'Rezept angelegt');
+  }
+  function reDelete(id){
+    var n=state.custom[id]&&state.custom[id].n; delete state.custom[id]; delete state.amt[id]; delete state.top[id]; registerCustom(state);
+    SLOTS.forEach(function(s){state.menu[s]=state.menu[s].map(function(r){return R[r]?r:SLOTOPTS[s][0]});state.pick[s]=(state.pick[s]||[]).filter(function(r){return R[r]})});
+    Object.keys(state.dayMenu).forEach(function(k){var o=state.dayMenu[k];Object.keys(o).forEach(function(s){if(!R[o[s]])delete o[s]});if(!Object.keys(o).length)delete state.dayMenu[k]});
+    jlog(iso(new Date()),'set-off','Rezept gelöscht: '+n); commit(); rEdit=null; closeSheet(); render(); toast('Rezept gelöscht');
+  }
+  function niSave(){
+    var N=rEdit.ni, name=String(N.n||'').trim(), k=parseFloat(String(N.k).replace(',','.'));
+    if(!name||!isFinite(k)){toast('Name und kcal sind nötig');return}
+    var num=function(v){v=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(v)?v:0};
+    var id='i'+Date.now().toString(36), pk=num(N.pk)||(N.u==='Stk'?1:(N.u==='ml'?1000:500));
+    state.citems[id]={n:name.slice(0,50),a:N.a||'trocken',u:N.u,p:pk,pl:N.u==='Stk'?(pk>1?pk+' Stk':'Stk'):(pk+' '+N.u),pr:num(N.pr),nut:[k,num(N.p),num(N.c),num(N.f)]};
+    registerCustom(state);
+    rEdit.ing.push([id,N.u==='Stk'?1:100]); rEdit.ni=null; rEdit.adding=false; commit(); reRedraw(); toast('Zutat angelegt');
+  }
+
   /* ---------- Körper und Fotos ---------- */
   var idbP=null, photoCache={}, photoDays=null, bodyDraft=null, photoView=null;
   function idb(){if(idbP)return idbP;idbP=new Promise(function(res,rej){try{var r=indexedDB.open('aufbau-fotos',1);r.onupgradeneeded=function(){r.result.createObjectStore('p')};r.onsuccess=function(){res(r.result)};r.onerror=function(){rej(r.error)}}catch(e){rej(e)}});idbP.catch(function(){idbP=null});return idbP}
@@ -1326,7 +1415,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   function lastBody(beforeKey){var ks=Object.keys(state.body).filter(function(k){return !beforeKey||k<beforeKey}).sort();return ks.length?{k:ks[ks.length-1],v:state.body[ks[ks.length-1]]}:null}
   function bodyAround(daysAgo){var target=iso(addDays(new Date(),-daysAgo)),best=null;Object.keys(state.body).sort().forEach(function(k){if(k<=target)best={k:k,v:state.body[k]}});return best}
   function bodyCheckCard(k,d){
-    if(heuteOffset!==0||(d!==6&&d!==0)) return '';
+    if(heuteOffset!==0||d!==6) return '';
     var lb=lastBody(); if(lb&&(fromIso(k)-fromIso(lb.k))/864e5<6) return '';
     return '<section class="sec"><button class="card check" data-act="body-open" style="width:100%;border:0;text-align:left"><span class="ic" aria-hidden="true">📏</span><span style="flex:1"><b>Wochen-Check</b><span>Bauchumfang messen und ein Foto machen, dauert eine Minute.</span></span>'+ICON.chev+'</button></section>';
   }
@@ -1460,8 +1549,9 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
       h+='<button class="cal'+(k===today?' today':'')+'" data-act="goday" data-k="'+k+'"><span class="dn">'+SHORT[d]+'<small>'+dt.getDate()+'.'+(dt.getMonth()+1)+'.</small></span><span class="emos">'+SLOTS.map(function(s){var r=l.e[s]?eatenRid(l.e[s],mm[s]):mm[s];return '<span class="'+(l.e[s]?'ok':'')+'" title="'+esc(R[r].n)+'">'+EMO[r]+'</span>'}).join('')+'</span><span class="kc"><b>'+nf0.format(tot[0])+'</b><br>'+tot[1]+' g P</span></button>';
     }
     h+='</div><div class="sec-f">Grün hinterlegt heißt schon gegessen.</div></section>';
+    h+='<section class="sec"><div class="sec-h"><span>Eigene Rezepte</span></div><div class="list">'+Object.keys(state.custom).filter(function(id){return R[id]}).map(function(id){var m=macros(id);return '<button class="row" data-recipe="'+id+'"><span class="ic-tile" aria-hidden="true">'+EMO[id]+'</span><span class="main"><span class="t">'+esc(R[id].n)+'</span><span class="s">'+SLOTSHORT[R[id].s]+' · '+m[0]+' kcal · '+m[1]+' g Protein</span></span>'+ICON.chev+'</button>'}).join('')+'<button class="row addrow" data-act="re-open"><span class="plus" aria-hidden="true">+</span><span class="main"><span class="t">Eigenes Rezept anlegen</span><span class="s">oder ein fertiges Rezept öffnen und kopieren</span></span></button></div></section>';
     [['Frühstück','f'],['Mittag, vorgekocht','m'],['Vor dem Training','b'],['Abendessen','a']].forEach(function(g){
-      h+='<section class="sec"><div class="sec-h"><span>'+g[0]+'</span></div><div class="list">'+SLOTOPTS[g[1]].map(function(id){var m=macros(id),tn=topNames(id);return '<button class="row" data-recipe="'+id+'"><span class="ic-tile" aria-hidden="true">'+EMO[id]+'</span><span class="main"><span class="t">'+esc(R[id].n)+'</span><span class="s">'+m[0]+' kcal · '+m[1]+' g Protein · '+R[id].t+' Min.'+(id==='shakshuka'?' · nur sonntags':'')+'</span>'+(tn?'<span class="tagline">'+esc(tn)+'</span>':'')+'</span>'+ICON.chev+'</button>'}).join('')+'</div></section>';
+      h+='<section class="sec"><div class="sec-h"><span>'+g[0]+'</span></div><div class="list">'+SLOTOPTS[g[1]].filter(function(id){return !R[id].own}).map(function(id){var m=macros(id),tn=topNames(id);return '<button class="row" data-recipe="'+id+'"><span class="ic-tile" aria-hidden="true">'+EMO[id]+'</span><span class="main"><span class="t">'+esc(R[id].n)+'</span><span class="s">'+m[0]+' kcal · '+m[1]+' g Protein · '+R[id].t+' Min.'+(id==='shakshuka'?' · nur sonntags':'')+'</span>'+(tn?'<span class="tagline">'+esc(tn)+'</span>':'')+'</span>'+ICON.chev+'</button>'}).join('')+'</div></section>';
     });
     return h;
   }
@@ -1712,7 +1802,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   function batchSize(rid){return R[rid]&&R[rid].s==='m'?4:0}
   function sheetHtml(rid){
     var r=R[rid], m=macros(rid), ex=r.x&&extraOn(r.s)?r.x:null, b=r.s==='m'?batchSize(rid):0, mult=sheetBatch&&b?b:1;
-    var h='<div class="grab"></div><div class="s-top"><button data-act="close">Fertig</button></div><div class="ic-tile lg" aria-hidden="true">'+EMO[rid]+'</div><h2 class="s-title" id="s-title">'+esc(r.n)+'</h2><div class="s-sub">'+esc(SLOTNAME[r.s])+' · '+r.t+' Minuten'+(ex?' · mit Stufe '+STEPS[state.step].n:'')+'</div>'+
+    var h='<div class="grab"></div><div class="s-top" style="justify-content:space-between">'+(r.own?'<button data-act="re-edit" data-r="'+rid+'">Bearbeiten</button>':'<button data-act="re-copy" data-r="'+rid+'">Als eigenes kopieren</button>')+'<button data-act="close">Fertig</button></div><div class="ic-tile lg" aria-hidden="true">'+EMO[rid]+'</div><h2 class="s-title" id="s-title">'+esc(r.n)+'</h2><div class="s-sub">'+esc(SLOTNAME[r.s])+' · '+r.t+' Minuten'+(ex?' · mit Stufe '+STEPS[state.step].n:'')+'</div>'+
       '<section class="sec"><div class="card macros"><div><div class="v c-k">'+m[0]+'</div><div class="k">kcal</div></div><div><div class="v c-p">'+m[1]+'</div><div class="k">Protein</div></div><div><div class="v c-c">'+m[2]+'</div><div class="k">Carbs</div></div><div><div class="v" style="color:var(--purple)">'+m[3]+'</div><div class="k">Fett</div></div></div><div class="sec-f">pro Portion</div></section>';
     var tl=topsOf(rid);
     h+='<section class="sec"><div class="sec-h"><span>Pimpen</span><span style="text-transform:none">'+(tl.length?tl.length+' gewählt':'optional')+'</span></div><div class="card tops">'+topsFor(rid).map(function(x){var tp=TOPS[x],on=tl.indexOf(x)>=0;return '<button class="top" data-act="top" data-r="'+rid+'" data-t="'+x+'" aria-pressed="'+on+'">'+esc(tp[0])+'<span>+'+tp[4]+'</span></button>'}).join('')+'</div><div class="sec-f">Gilt jedes Mal, wenn du dieses Gericht isst. Wird in kcal, Vorschlag und Einkaufsliste mitgerechnet.</div></section>';
@@ -1730,7 +1820,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   function openAdd(){lastFocus=document.activeElement;sheetMode='add';scan={stage:'idle'};sheet.innerHTML=addHtml();showSheet()}
   function openSheet(rid){sheetMode='recipe';if(sheet.hidden)lastFocus=document.activeElement;if(sheetRid!==rid)sheetBatch=false;sheetRid=rid;sheet.innerHTML=sheetHtml(rid);sheet.hidden=false;backdrop.hidden=false;sheet.scrollTop=0;document.body.style.overflow='hidden';sheet.focus()}
   function openPicker(slot){sheetMode='picker';lastFocus=document.activeElement;sheet.innerHTML=pickerHtml(slot);sheet.hidden=false;backdrop.hidden=false;sheet.scrollTop=0;document.body.style.overflow='hidden';sheet.focus()}
-  function closeSheet(){if(sheetMode==='add'){scan={stage:'idle'}}sheetMode=null;sheet.hidden=true;backdrop.hidden=true;document.body.style.overflow='';if(lastFocus&&lastFocus.focus)try{lastFocus.focus()}catch(e){}}
+  function closeSheet(){if(sheetMode==='add'){scan={stage:'idle'}}if(sheetMode==='redit'){rEdit=null}sheetMode=null;sheet.hidden=true;backdrop.hidden=true;document.body.style.overflow='';if(lastFocus&&lastFocus.focus)try{lastFocus.focus()}catch(e){}}
   backdrop.addEventListener('click',closeSheet);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(!sheet.hidden)closeSheet();if(!liveEl.hidden)stopLive()}});
   sheet.addEventListener('click',function(e){
@@ -1739,6 +1829,25 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(a==='batch'){sheetBatch=b.dataset.b==='1';sheet.innerHTML=sheetHtml(sheetRid);return}
     if(a==='pick-set'){setPick(b.dataset.slot,b.dataset.r);closeSheet();render();return}
     if(a==='pick-recipe'){openSheet(b.dataset.r);return}
+    if(a==='re-open'){openREdit(null,null);return}
+    if(a==='re-copy'){openREdit(b.dataset.r,null);return}
+    if(a==='re-edit'){openREdit(null,b.dataset.r);return}
+    if(rEdit&&sheetMode==='redit'){
+      if(a==='re-save'){reSave();return}
+      if(a==='re-delete'){if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Wirklich löschen?';return}reDelete(rEdit.id);return}
+      if(a==='re-slot'){rEdit.s=b.dataset.s;reRedraw();return}
+      if(a==='re-emo'){rEdit.e=b.dataset.e;reRedraw();return}
+      if(a==='re-add'){rEdit.adding=!rEdit.adding;rEdit.ni=null;reRedraw();var qi=sheet.querySelector('[data-re="q"]');if(qi)qi.focus();return}
+      if(a==='re-pick'){var pid=b.dataset.id;rEdit.ing.push([pid,I[pid][2]==='Stk'?1:100]);rEdit.adding=false;rEdit.q='';reRedraw();return}
+      if(a==='re-del'){rEdit.ing.splice(+b.dataset.i,1);reRedraw();return}
+      if(a==='re-amt'){var gg=rEdit.ing[+b.dataset.i];if(gg&&I[gg[0]]){var stp=amtStep([gg[0],gg[1],I[gg[0]][2]]);gg[1]=Math.max(0,Math.round((gg[1]+stp*(+b.dataset.dir))*10)/10)}reRedraw();return}
+      if(a==='re-newitem'){rEdit.ni={n:rEdit.q||'',u:'g',a:'trocken',q:rEdit.q||''};rEdit.adding=false;reRedraw();return}
+      if(a==='ni-cancel'){rEdit.ni=null;reRedraw();return}
+      if(a==='ni-unit'){rEdit.ni.u=b.dataset.u;reRedraw();return}
+      if(a==='ni-save'){niSave();return}
+      if(a==='ni-search'){var nq=String(rEdit.ni.q||rEdit.ni.n||'').trim();if(nq.length<2)return;b.textContent='Suche…';offSearch(nq).then(function(items){if(!rEdit||!rEdit.ni)return;rEdit.ni.res=items||[];if(items===null)toast('Suche gerade nicht erreichbar');reRedraw()});return}
+      if(a==='ni-use'){var it=rEdit.ni.res[+b.dataset.i];if(it){rEdit.ni.n=it.n;rEdit.ni.k=it.k;rEdit.ni.p=it.p;rEdit.ni.c=it.c;rEdit.ni.f=it.f;rEdit.ni.u='g';if(it.portion)rEdit.ni.pk=it.portion;rEdit.ni.res=null}reRedraw();return}
+    }
     if(a==='body-photo'){var bf=document.getElementById('bodyfile');bf.value='';bf.click();return}
     if(a==='body-save'){saveBody();return}
     if(a==='photo-cmp'){photoView.cmp=!photoView.cmp;sheet.innerHTML=photoSheetHtml(b.dataset.d);fillPhotos();return}
@@ -1778,6 +1887,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(a==='all'){var l2=logOf(k,true);dayMeals(d,k).forEach(function(x){if(x.rid&&!l2.e[x.slot]){var m2=macros(x.rid);l2.e[x.slot]={r:x.rid,m:m2};jlog(k,'meal',SLOTNAME[x.slot]+': '+R[x.rid].n,m2[0],m2[1])}});commit();render();return}
     if(a==='quick'){var q=QUICK[+b.dataset.i];logOf(k,true).x.push({n:q[0],k:q[1],p:q[2]});jlog(k,'extra',q[0],q[1],q[2]);commit();if(sheetMode==='add')closeSheet();render();toast(q[0]+' hinzugefügt');return}
     if(a==='add-open'){openAdd();return}
+    if(a==='re-open'){openREdit(null,null);return}
     if(a==='body-open'){openBody();return}
     if(a==='photo-open'){openPhoto(b.dataset.d);return}
     if(a==='sync-on'){setSyncKey(newSyncKey());cloud.pulled=true;state.updatedAt=state.updatedAt||Date.now();setSync('','Verbinde…');cloudPushNow().then(function(){render();toast('Cloud-Sync ist an')});render();return}
@@ -1841,6 +1951,9 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(a==='price'){var v=parseFloat(String(t.value).replace(',','.'));if(isFinite(v)&&v>=0)state.prices[t.dataset.id]=v;else delete state.prices[t.dataset.id];commit();render();return}
   });
   function onInput(e){
+    if(rEdit&&sheetMode==='redit'&&e.target.dataset){var ds=e.target.dataset;
+      if(ds.re){rEdit[ds.re]=e.target.value;if(ds.re==='q'){var rr=document.getElementById('re-res');if(rr)rr.innerHTML=reResults()}return}
+      if(ds.ni&&rEdit.ni){rEdit.ni[ds.ni]=e.target.value;return}}
     if(e.target.dataset&&e.target.dataset.body&&bodyDraft){bodyDraft[e.target.dataset.body]=e.target.value;return}
     var t=e.target, s=t.dataset.scan; if(!s||scan.stage!=='edit') return;
     if(s==='g') scan.g=t.value; else scan.prod[s]=t.value;
@@ -1873,6 +1986,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   }
   main.addEventListener('submit',onSubmit);
   sheet.addEventListener('input',onInput);
+  sheet.addEventListener('change',function(e){if(rEdit&&rEdit.ni&&e.target.dataset&&e.target.dataset.ni)rEdit.ni[e.target.dataset.ni]=e.target.value});
   sheet.addEventListener('submit',onSubmit);
 
   render();
