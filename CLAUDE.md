@@ -39,7 +39,8 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 
 ## Technik
 
-- Eine Datei: `index.html` mit Stammdaten (`I` Artikel, `R` Rezepte mit Makros pro Portion, `PLANS`, `DINNERS`), State, Views (Heute, Woche, Einkauf, Analyse) und Rezept-Sheet.
+- Eine Datei: `index.html` mit Stammdaten (`I` Artikel, `R` Rezepte mit Makros pro Portion, `TOPS`, `SLOTOPTS`), State, Views (Heute, Kochen, Einkauf, Analyse) und Sheets (Rezept, Auswahl, Hinzufügen).
+- Tab Kochen: nächstes Meal Prep (Sonntag oder Mittwoch) mit Gesamtmengen und Ablauf zum Abhaken (`cook[datum+S|W]`), „Für morgen vorbereiten“, Wochenübersicht (Tag antippen springt zu Heute), alle Rezepte. Kalorienstufe und Trainingszeit stehen unter Analyse, Einstellungen.
 - Dieselbe Datei läuft auch als Claude Artifact. `IN_CLAUDE` erkennt das:
   - In Claude: Sync über die db-Capability, Fotoscan der Nährwerttabelle über `sample`, keine Kamera und kein externer Abruf.
   - Auf GitHub Pages: Live-Barcode-Scanner (ZXing in `vendor/`), Open Food Facts für Produktdaten, nur localStorage.
@@ -52,7 +53,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
   - `weights[date]`, `wtime[date]`
   - `products[ean]`
   - `journal[]` (automatisches Tagebuch mit Zeitstempel)
-  - `prices`, `vorrat`, `extras`, `shop`
+  - `prices`, `vorrat`, `extras`, `shop`, `cook`
 - Datenversion `v:3`. Beim Umstieg von älteren Versionen wird der alte Stand einmal unter `aufbau-plan-v1-sicherung` gesichert. Änderungen am Datenmodell immer abwärtskompatibel machen, nie Felder löschen, die Matzes Einträge enthalten.
 - Tagesziel ist fix: 2.800 kcal plus 150 je Kalorienstufe, 160 g Protein. Der Vorschlag auf Heute sucht die beste Kombination der offenen frischen Mahlzeiten (Mittag bleibt fest, weil vorgekocht).
 - Scanner auf GitHub Pages: `vendor/barcode-detector.js` (zxing-cpp als WebAssembly, `vendor/zxing_reader.wasm`), Live-Bild mit Drehsperre. Produktsuche per Name über Open Food Facts.
