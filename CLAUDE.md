@@ -71,6 +71,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 ## Links
 
 - App (GitHub Pages): https://matzeengel.github.io/aufbau-app/
+- Supabase-Projekt `aufbau` (Organisation Matze, Free): https://supabase.com/dashboard/project/igbzubnjstbwckxqejeb
 - Claude-Version: https://claude.ai/artifact/9T7uTg8tuszt7cquG7bxWw
 - Ernährungsplan als Dokument: https://claude.ai/artifact/5q9Hmw8zv5eZbNrcKWA2bK
 

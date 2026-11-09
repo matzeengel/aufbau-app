@@ -739,7 +739,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   })();
 
   /* ---------- Cloud-Sync (Supabase, nur außerhalb von Claude) ---------- */
-  var SUPA_URL='', SUPA_KEY='';
+  var SUPA_URL='https://igbzubnjstbwckxqejeb.supabase.co', SUPA_KEY='sb_publishable_4MOTrLz2PwhtDo-AtZ7DyA_YV7GFs3p';
   var SYNC_LS='aufbau-sync', cloud={busy:false,again:false,timer:null,pulled:false,keyInput:false};
   function syncKey(){try{return (JSON.parse(localStorage.getItem(SYNC_LS)||'{}')||{}).key||''}catch(e){return ''}}
   function setSyncKey(k){try{if(k)localStorage.setItem(SYNC_LS,JSON.stringify({key:k}));else localStorage.removeItem(SYNC_LS)}catch(e){}}
