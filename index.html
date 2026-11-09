@@ -879,13 +879,21 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   /* Auswahl einer Mahlzeit als Sheet */
   function pickerHtml(slot){
     var dt=addDays(new Date(),heuteOffset), k=iso(dt), d=wd(dt), l=logOf(k)||{e:{},x:[]}, cur=menuFor(k,d)[slot], eaten=l.e[slot], sel=eaten?eatenRid(eaten,cur):cur;
-    var rows=optsFor(slot,d).map(function(r){var bp=eaten?null:bestPlan(k,d,slot,r);return {r:r,m:macros(r),bp:bp}});
+    var main=optsFor(slot,d), more=Object.keys(R).filter(function(r){return main.indexOf(r)<0&&(r!=='shakshuka'||d===6)});
+    var mk=function(r){var bp=eaten?null:bestPlan(k,d,slot,r);return {r:r,m:macros(r),bp:bp}};
+    var rows=main.map(mk), rows2=more.map(mk);
+    if(rows2.some(function(x){return x.r===sel})){rows2.sort(function(a,b){return (b.r===sel)-(a.r===sel)})}
     var bestR=null;if(!eaten){rows.forEach(function(x){if(x.bp.best&&(!bestR||x.bp.best.sc<bestR.bp.best.sc))bestR=x})}
-    var h='<div class="grab"></div><div class="s-top"><button data-act="close">Fertig</button></div><h2 class="s-title" id="s-title">'+esc(SLOTSHORT[slot])+'</h2><div class="s-sub">'+esc(dt.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'}))+(eaten?' · schon gegessen, du kannst es korrigieren':'')+'</div>';
-    h+='<section class="sec"><div class="list">'+rows.map(function(x){
+    var row=function(x){
       var on=x.r===sel, proj=x.bp&&x.bp.best?'Tag ca. '+nf0.format(Math.round(x.bp.best.k/10)*10)+' kcal · '+nf0.format(x.bp.best.p)+' g P':'';
       return '<div class="row'+(on?' sel':'')+'"><button class="meal-open" data-act="pick-set" data-slot="'+slot+'" data-r="'+x.r+'"><span class="radio">'+ICON.check+'</span><span class="ic-tile sm" aria-hidden="true">'+EMO[x.r]+'</span><span class="main"><span class="t">'+esc(R[x.r].n)+(bestR&&bestR.r===x.r?'<span class="badge">passt am besten</span>':'')+'</span><span class="s num">'+x.m[0]+' kcal · '+x.m[1]+' g Protein · '+x.m[2]+' g Carbs'+(proj?'<br>'+proj:'')+'</span></span></button><button class="mini-btn" data-act="pick-recipe" data-r="'+x.r+'">Rezept</button></div>';
-    }).join('')+'</div>'+(slot==='m'?'<div class="sec-f">Mittag ist vorgekocht. Die Auswahl hier gilt nur für diesen Tag. Was du am Sonntag und Mittwoch kochst, legst du unter Woche fest.</div>':'<div class="sec-f">Die Auswahl gilt nur für diesen Tag. Den festen Wochenplan änderst du unter Woche.</div>')+'</section>';
+    };
+    var h='<div class="grab"></div><div class="s-top"><button data-act="close">Fertig</button></div><h2 class="s-title" id="s-title">'+esc(SLOTSHORT[slot])+'</h2><div class="s-sub">'+esc(dt.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'}))+(eaten?' · schon gegessen, du kannst es korrigieren':'')+'</div>';
+    h+='<section class="sec"><div class="list">'+rows.map(row).join('')+'</div>'+(slot==='m'?'<div class="sec-f">Mittag ist vorgekocht. Die Auswahl hier gilt nur für diesen Tag. Was du am Sonntag und Mittwoch kochst, stellst du unter Einkauf, Planen ein.</div>':'<div class="sec-f">Die Auswahl gilt nur für diesen Tag. Deinen Wochenplan stellst du unter Einkauf, Planen ein.</div>')+'</section>';
+    var groups=[['m','Aus dem Meal Prep'],['a','Abendessen'],['f','Frühstück'],['b','Snacks']].filter(function(g){return g[0]!==slot});
+    groups.forEach(function(g){var rs=rows2.filter(function(x){return R[x.r].s===g[0]});if(!rs.length)return;
+      h+='<section class="sec"><div class="sec-h"><span>'+g[1]+'</span></div><div class="list">'+rs.map(row).join('')+'</div>'+(g[0]==='m'&&slot!=='m'?'<div class="sec-f">Isst du ein Mittagsgericht auch abends, brauchst du beim Meal Prep eine Portion mehr.</div>':'')+'</section>';
+    });
     return h;
   }
   function setPick(slot,r){
@@ -1206,7 +1214,9 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   }
   function sessionData(s){
     var cnt={}, order=[];
-    for(var d=s.from;d<=s.to;d++){var r=state.menu.m[d];if(!cnt[r]){cnt[r]=0;order.push(r)}cnt[r]++}
+    var base=fromIso(s.date), sw=wd(base);
+    for(var d=s.from;d<=s.to;d++){var dk=iso(addDays(base,(d-sw+7)%7)), mf=menuFor(dk,d);
+      SLOTS.forEach(function(sl){var r=mf[sl];if(!R[r]||R[r].s!=='m')return;if(!cnt[r]){cnt[r]=0;order.push(r)}cnt[r]++})}
     var ing={}, ingOrder=[];
     order.forEach(function(r){var n=cnt[r],R0=R[r],ex=R0.x&&extraOn('m')?R0.x:null;
       R0.ing.forEach(function(g){var key=g[0]?g[0]+'|'+g[2]:g[3];if(!ing[key]){ing[key]={name:g[0]&&I[g[0]]?I[g[0]][0]:g[3],amt:0,unit:g[2],some:false};ingOrder.push(key)}
@@ -1220,7 +1230,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(ing['knoblauch|']||ing['Knoblauch']) cut.push('Knoblauch');
     if(cut.length) steps.push(['Vorbereiten','Alles schneiden: '+cut.join(', ')+'.']);
     order.forEach(function(r){R[r].st.forEach(function(x,i){if(/^Reis im Topf/.test(x))return;steps.push([R[r].n+' · '+cnt[r]+' Portionen',x])});if(cnt[r]>=3&&R[r].tip&&/Durchg/.test(R[r].tip))steps.push([R[r].n+' · Tipp',R[r].tip])});
-    var boxes=s.to-s.from+1;
+    var boxes=order.reduce(function(a,r){return a+cnt[r]},0);
     steps.push(['Portionieren',boxes+' Boxen befüllen, offen abkühlen lassen und innerhalb von 2 Stunden in den Kühlschrank stellen.']);
     steps.push(['Einfrieren','Die Box für '+s.freeze+' direkt einfrieren und am Vorabend in den Kühlschrank legen. So bleibt alles frisch.']);
     var mins=Math.max.apply(null,order.map(function(r){return R[r].t}))+10*(order.length-1)+10;
