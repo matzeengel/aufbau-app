@@ -26,8 +26,12 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Mag nicht: Vollkornnudeln, Wraps, Lachs. Rezepte einfach halten: nur Pfanne, Airfryer und Topf für Reis und Nudeln.
 - Shakshuka nur sonntags.
 - Meal Prep: Mittag wird vorgekocht (Sonntag 4 Portionen für Mo bis Do, Mittwoch 3 Portionen für Fr bis So), abends frisch.
-  - Plan A: Chili und Curry.
-  - Plan B: Reis Bowl und Airfryer Kartoffel Hähnchen.
+  - Plan A: Chili und Curry. Plan B: Reis Bowl und Airfryer Kartoffel Hähnchen. Beides sind nur Schnellvorlagen in der Woche.
+- Pro Mahlzeit gibt es mindestens 3 Optionen (`SLOTOPTS`), die alle grob zum Tagesziel passen:
+  - Frühstück: Haferflocken mit Mandelmus, Overnight Oats mit Skyr, Rührei mit Vollkornbrot.
+  - Mittag (vorgekocht): Chili, Curry, Reis Bowl, Airfryer Kartoffel Hähnchen.
+  - Vor dem Training: Skyr Bowl, Vollkornbrot mit Hüttenkäse und Banane, Whey Shake mit Reiswaffeln.
+  - Abendessen: Bolognese, Reispfanne, Gnocchi Pfanne, Shakshuka (nur sonntags).
 - Einkauf bei Kaufland. Die Liste ist nach dem Laufweg sortiert: Obst und Gemüse zuerst, Tiefkühl zuletzt. Vorrat steht ganz unten.
 - Mikrowelle zum Aufwärmen gibt es zuhause und im Office.
 
@@ -38,12 +42,16 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
   - In Claude: Sync über die db-Capability, Fotoscan der Nährwerttabelle über `sample`, keine Kamera und kein externer Abruf.
   - Auf GitHub Pages: Live-Barcode-Scanner (ZXing in `vendor/`), Open Food Facts für Produktdaten, nur localStorage.
 - localStorage-Key `aufbau-plan-v1`. Wichtige Felder:
-  - `plan`, `dinner[7]`, `step`, `train`
-  - `log[YYYY-MM-DD] = {e:{f,m,b,a}, x:[{n,k,p,c,f}]}`
+  - `menu = {f,m,b,a}` mit je 7 Rezept-IDs (Wochenplan pro Wochentag), `dayMenu[YYYY-MM-DD] = {slot: rid}` für Änderungen nur an einem Tag
+  - `step`, `train`, `plan` (nur letzte Vorlage)
+  - `log[YYYY-MM-DD] = {e:{slot:{r,m}}, x:[{n,k,p,c,f}]}` (gegessene Mahlzeit mit Rezept und Makros zum Zeitpunkt des Abhakens)
   - `weights[date]`, `wtime[date]`
   - `products[ean]`
   - `journal[]` (automatisches Tagebuch mit Zeitstempel)
   - `prices`, `vorrat`, `extras`, `shop`
+- Datenversion `v:3`. Beim Umstieg von älteren Versionen wird der alte Stand einmal unter `aufbau-plan-v1-sicherung` gesichert. Änderungen am Datenmodell immer abwärtskompatibel machen, nie Felder löschen, die Matzes Einträge enthalten.
+- Tagesziel ist fix: 2.800 kcal plus 150 je Kalorienstufe, 160 g Protein. Der Vorschlag auf Heute sucht die beste Kombination der offenen frischen Mahlzeiten (Mittag bleibt fest, weil vorgekocht).
+- Scanner auf GitHub Pages: `vendor/barcode-detector.js` (zxing-cpp als WebAssembly, `vendor/zxing_reader.wasm`), Live-Bild mit Drehsperre. Produktsuche per Name über Open Food Facts.
 - Daten zwischen Claude-Version und GitHub-Version übertragen: Analyse, dann Backup kopieren und einfügen.
 - Design: Apple-Stil mit Systemschrift, iOS-Farben, Ringen, gruppierten Listen und schwebender Glas-Tab-Leiste. Farben stehen als CSS-Variablen in `:root` mit Dunkelmodus.
 
@@ -59,7 +67,6 @@ Noch nicht entschieden, Matze wählt aus:
 
 - Wasser-Tracker (Ziel 3 bis 3,5 l)
 - Haken für Kreatin und Vitamin D
-- Mahlzeit spontan tauschen
 - Bauchumfang wöchentlich
 - Eigene Rezepte anlegen und bearbeiten
 - Sync mit dem Laptop (zum Beispiel Supabase)
