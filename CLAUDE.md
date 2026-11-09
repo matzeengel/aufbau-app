@@ -27,6 +27,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Shakshuka nur sonntags.
 - Meal Prep: Mittag wird vorgekocht (Sonntag 4 Portionen für Mo bis Do, Mittwoch 3 Portionen für Fr bis So), abends frisch.
   - Einkauf hat zwei Modi: „Planen“ (pro Gericht Anzahl mit Plus und Minus, immer 7 Tage pro Mahlzeit, `changeCount()` und `arrange()` verteilen auf die Tage: Mittag in Blöcken fürs Vorkochen, sonst im Wechsel, Shakshuka nur sonntags) und „Im Laden“ (große Liste zum Abhaken, Erledigte ausblenden, Einkauf abschließen). Plan A/B gibt es nicht mehr.
+- Mengen anpassen: Im Rezept hat jede Zutat Plus und Minus (`amt[rid][index]`). Makros werden über `NUT` (Nährwerte pro 100 g/ml bzw. pro Stück) neu berechnet, Einkauf und Meal Prep nutzen die angepassten Mengen. „Standard“ setzt zurück.
 - Gerichte pimpen: Toppings (`TOPS`) pro Gericht im Rezeptfenster, gespeichert in `top[rid]`. Sie zählen in Makros, Vorschlag und Einkaufsliste.
 - In der Auswahl einer Mahlzeit (Heute) stehen unter „Weitere Gerichte“ auch alle Rezepte der anderen Mahlzeiten, z. B. das Mittagsgericht zum Abendessen. Solche Mittagsgerichte zählt der Kochen-Tab als zusätzliche Meal-Prep-Portion.
 - Extras unter Heute kommen über „Essen hinzufügen“ (Sheet mit Scannen, Suchen, Meine Produkte, Schnell eintragen, manuell).
@@ -48,7 +49,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - localStorage-Key `aufbau-plan-v1`. Wichtige Felder:
   - `menu = {f,m,b,a}` mit je 7 Rezept-IDs (Wochenplan pro Wochentag), `dayMenu[YYYY-MM-DD] = {slot: rid}` für Änderungen nur an einem Tag
   - `pick = {f,m,b,a}` Gerichte der Woche (wird aus den Anzahlen abgeleitet)
-  - `top = {rid: [toppingIds]}` Toppings je Gericht
+  - `top = {rid: [toppingIds]}` Toppings je Gericht, `amt = {rid: {index: menge}}` angepasste Zutatenmengen
   - `step`, `train`
   - `log[YYYY-MM-DD] = {e:{slot:{r,m}}, x:[{n,k,p,c,f}]}` (gegessene Mahlzeit mit Rezept und Makros zum Zeitpunkt des Abhakens)
   - `weights[date]`, `wtime[date]`

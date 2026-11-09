@@ -546,6 +546,11 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     t_spinat:['Babyspinat','spinat',50,'g',12,1,1,0,'ma'],
     t_parm:['Parmesan','parmesan',20,'g',80,7,0,6,'ma']
   };
+  var NUT={hafer:[372,13.5,58.7,7],milch:[47,3.4,4.9,1.5],mandelmus:[620,24,6,55],skyr:[63,11,4,0.2],tkblau:[57,0.7,12,0.3],banane:[105,1.3,24,0.4],
+    cranberries:[325,0,80,1],cashews:[575,18,30,46],reis:[350,7.5,78,0.6],hack:[125,21,0,5],kidney:[105,8,15,0.5],passiert:[33,1.5,5.5,0.2],paprika:[45,1.5,9,0.5],
+    zwiebeln:[40,1.2,8,0.1],oel:[820,0,0,91],haehnchen:[105,23.5,0,1.2],kokos:[70,0.7,2,6.5],tkerbsen:[80,5.5,10,0.5],currypaste:[15,0.3,1.5,1],tkgemuese:[40,2,6,0.3],
+    kartoffeln:[72,2,15.5,0.1],brokkoli:[34,3,4,0.4],gnocchi:[150,4,32,0.5],kirschtomaten:[20,1,3,0.2],spinat:[23,2.9,1.4,0.4],parmesan:[400,33,0,29],nudeln:[355,12.5,71,1.5],
+    eier:[82,7.5,0.4,5.8],huettenkaese:[98,12,3,4.3],stueckig:[22,1.2,3.5,0.1],brot:[215,7,38,1.5],whey:[400,80,8,5],reiswaffeln:[387,8,80,2.8],apfel:[78,0.4,18,0.2]};
   var EMO={fruehstueck:'🥣',oats:'🫙',ruehrei:'🥚',chili:'🌶️',curry:'🍛',reisbowl:'🍚',ofenblech:'🥔',bowl:'🫐',brotkaese:'🍞',shake:'🥤',bolognese:'🍝',reispfanne:'🥘',gnocchi:'🥟',shakshuka:'🍳'};
   /* Erinnerungen: id, Titel, Standardzeit, Tage ('all', 'train' oder Liste 0=Mo), Text */
   var REM=[
@@ -581,7 +586,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     for(var d=0;d<7;d++){m.f.push('fruehstueck');m.m.push(p[d<=3?0:1]);m.b.push('bowl');m.a.push(R[din[d]]&&R[din[d]].s==='a'?din[d]:DEF_DINNER[d])}
     return m;
   }
-  function blank(){return {v:3,updatedAt:0,plan:'A',menu:defaultMenu('A'),dayMenu:{},step:0,train:'18:30',prices:{},vorrat:{},extras:{},shop:{},log:{},weights:{},wtime:{},products:{},journal:[],cook:{},tdays:[0,1,2,3,4,5],rem:{},rv:{}}}
+  function blank(){return {v:3,updatedAt:0,plan:'A',menu:defaultMenu('A'),dayMenu:{},step:0,train:'18:30',prices:{},vorrat:{},extras:{},shop:{},log:{},weights:{},wtime:{},products:{},journal:[],cook:{},tdays:[0,1,2,3,4,5],rem:{},rv:{},amt:{}}}
   function normalize(s){
     var b=blank();
     if(!s||typeof s!=='object') return b;
@@ -591,7 +596,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     Object.keys(b).forEach(function(k){if(s[k]===undefined)s[k]=b[k]});
     SLOTS.forEach(function(sl){var arr=(Array.isArray(s.menu[sl])&&s.menu[sl].length===7)?s.menu[sl]:dm[sl];s.menu[sl]=arr.map(function(r,d){return R[r]&&R[r].s===sl?r:dm[sl][d]})});
     s.step=Math.max(0,Math.min(3,+s.step||0));
-    ['prices','vorrat','extras','shop','log','weights','wtime','products','dayMenu','cook','rem','rv'].forEach(function(k){if(!s[k]||typeof s[k]!=='object'||Array.isArray(s[k]))s[k]={}});
+    ['prices','vorrat','extras','shop','log','weights','wtime','products','dayMenu','cook','rem','rv','amt'].forEach(function(k){if(!s[k]||typeof s[k]!=='object'||Array.isArray(s[k]))s[k]={}});
     if(!Array.isArray(s.journal)) s.journal=[];
     if(!Array.isArray(s.tdays)) s.tdays=[0,1,2,3,4,5]; s.tdays=s.tdays.filter(function(x){return x>=0&&x<=6});
     if(!s.top||typeof s.top!=='object'||Array.isArray(s.top)) s.top={};
@@ -635,9 +640,13 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   function fmtMin(m){return pad(Math.floor(m/60))+':'+pad(m%60)}
   function price(id){var p=state.prices[id];return (typeof p==='number'&&isFinite(p))?p:I[id][5]}
   function extraOn(slot){return slot==='a'?state.step>=1:slot==='f'?state.step>=2:slot==='m'?state.step>=3:false}
+  function ingAmt(rid,i){var o=state.amt&&state.amt[rid];return (o&&o[i]!=null)?o[i]:R[rid].ing[i][1]}
+  function perUnit(id,unit){var n=NUT[id];if(!n)return null;var f=(unit==='g'||unit==='ml')?0.01:1;return n.map(function(v){return v*f})}
+  function amtDelta(rid){var d=[0,0,0,0],o=state.amt&&state.amt[rid];if(!o)return d;Object.keys(o).forEach(function(i){var g=R[rid].ing[i];if(!g||g[1]==null)return;var pu=perUnit(g[0],g[2]);if(!pu)return;var diff=o[i]-g[1];for(var j=0;j<4;j++)d[j]+=pu[j]*diff});return d}
+  function amtStep(g){var u=g[2],b=g[1];if(u==='Stk'||u==='TL')return 0.5;if(u==='ml')return b>=200?50:5;return b>=200?25:(b>=50?10:5)}
   function topsOf(rid){return (state.top&&state.top[rid])||[]}
   function topsFor(rid){return Object.keys(TOPS).filter(function(x){return TOPS[x][8].indexOf(R[rid].s)>=0})}
-  function macros(rid){var r=R[rid],m=r.m.slice(),i;if(r.x&&extraOn(r.s)){for(i=0;i<4;i++)m[i]+=r.x[i+2]}topsOf(rid).forEach(function(x){for(i=0;i<4;i++)m[i]+=TOPS[x][4+i]});return m}
+  function macros(rid){var r=R[rid],m=r.m.slice(),i;if(r.x&&extraOn(r.s)){for(i=0;i<4;i++)m[i]+=r.x[i+2]}topsOf(rid).forEach(function(x){for(i=0;i<4;i++)m[i]+=TOPS[x][4+i]});var ad=amtDelta(rid);for(i=0;i<4;i++)m[i]=Math.max(0,Math.round(m[i]+ad[i]));return m}
   function topNames(rid){var t=topsOf(rid);return t.length?'mit '+t.map(function(x){return TOPS[x][0]}).join(', '):''}
   function isTrainDay(k,d){var l=k&&state.log[k];if(l&&l.rest===true)return false;if(l&&l.rest===false)return true;return state.tdays.indexOf(d)>=0}
   /* Ziel: an Ruhetagen 200 kcal weniger, vor allem Kohlenhydrate */
@@ -1219,8 +1228,8 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
       SLOTS.forEach(function(sl){var r=mf[sl];if(!R[r]||R[r].s!=='m')return;if(!cnt[r]){cnt[r]=0;order.push(r)}cnt[r]++})}
     var ing={}, ingOrder=[];
     order.forEach(function(r){var n=cnt[r],R0=R[r],ex=R0.x&&extraOn('m')?R0.x:null;
-      R0.ing.forEach(function(g){var key=g[0]?g[0]+'|'+g[2]:g[3];if(!ing[key]){ing[key]={name:g[0]&&I[g[0]]?I[g[0]][0]:g[3],amt:0,unit:g[2],some:false};ingOrder.push(key)}
-        if(g[1]==null)ing[key].some=true;else ing[key].amt+=g[1]*n;
+      R0.ing.forEach(function(g,gi){var key=g[0]?g[0]+'|'+g[2]:g[3];if(!ing[key]){ing[key]={name:g[0]&&I[g[0]]?I[g[0]][0]:g[3],amt:0,unit:g[2],some:false};ingOrder.push(key)}
+        if(g[1]==null)ing[key].some=true;else ing[key].amt+=ingAmt(r,gi)*n;
         if(ex&&ex[0]===g[0])ing[key].amt+=ex[1]*n;});
     });
     var hasRice=ing['reis|g'], hasPot=ing['kartoffeln|g'], steps=[];
@@ -1277,10 +1286,10 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     var tot={}, uses={}, usedV={};
     function add(rid,n){
       var r=R[rid], ex=r.x&&extraOn(r.s);
-      r.ing.forEach(function(g){
-        var id=g[0]; if(!id) return;
+      r.ing.forEach(function(g,gi){
+        var id=g[0]; if(!id) return; var am=ingAmt(rid,gi);
         uses[id]=uses[id]||[]; if(uses[id].indexOf(r.n)<0) uses[id].push(r.n);
-        if(I[id][6]==='w'&&g[1]!=null) tot[id]=(tot[id]||0)+g[1]*n; else usedV[id]=true;
+        if(I[id][6]==='w'&&am!=null) tot[id]=(tot[id]||0)+am*n; else usedV[id]=true;
       });
       if(ex){tot[r.x[0]]=(tot[r.x[0]]||0)+r.x[1]*n}
       topsOf(rid).forEach(function(x){var tp=TOPS[x],id=tp[1];uses[id]=uses[id]||[];if(uses[id].indexOf(r.n)<0)uses[id].push(r.n);if(I[id][6]==='w')tot[id]=(tot[id]||0)+tp[2]*n;else usedV[id]=true});
@@ -1518,9 +1527,11 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     var tl=topsOf(rid);
     h+='<section class="sec"><div class="sec-h"><span>Pimpen</span><span style="text-transform:none">'+(tl.length?tl.length+' gewählt':'optional')+'</span></div><div class="card tops">'+topsFor(rid).map(function(x){var tp=TOPS[x],on=tl.indexOf(x)>=0;return '<button class="top" data-act="top" data-r="'+rid+'" data-t="'+x+'" aria-pressed="'+on+'">'+esc(tp[0])+'<span>+'+tp[4]+'</span></button>'}).join('')+'</div><div class="sec-f">Gilt jedes Mal, wenn du dieses Gericht isst. Wird in kcal, Vorschlag und Einkaufsliste mitgerechnet.</div></section>';
     if(b) h+='<section class="sec"><div class="seg"><button data-act="batch" data-b="0" aria-pressed="'+!sheetBatch+'">1 Portion</button><button data-act="batch" data-b="1" aria-pressed="'+sheetBatch+'">'+b+' Portionen</button></div></section>';
-    h+='<section class="sec"><div class="sec-h"><span>Zutaten'+(mult>1?' für '+mult+' Portionen':'')+'</span></div><div class="list">'+r.ing.map(function(g){
-      var a=g[1], plus=ex&&ex[0]===g[0]?ex[1]:0, txt=a==null?'etwas':nf.format((a+plus)*mult)+(g[2]?' '+g[2]:'');
-      return '<div class="row"><span class="main"><span class="t">'+esc(g[3])+'</span>'+(plus?'<span class="s" style="color:var(--orange)">inklusive +'+nf.format(plus*mult)+' '+g[2]+' durch die Stufe</span>':'')+'</span><span class="r num"><b>'+esc(txt)+'</b></span></div>';
+    h+='<section class="sec"><div class="sec-h"><span>Zutaten'+(mult>1?' für '+mult+' Portionen':'')+'</span>'+(state.amt[rid]?'<button class="act" data-act="amt-reset" data-r="'+rid+'">Standard</button>':(mult===1?'<span style="text-transform:none">Menge mit + und −</span>':''))+'</div><div class="list">'+r.ing.map(function(g,gi){
+      var a=g[1]==null?null:ingAmt(rid,gi), plus=ex&&ex[0]===g[0]?ex[1]:0, changed=a!=null&&a!==g[1], txt=a==null?'etwas':nf.format((a+plus)*mult)+(g[2]?' '+g[2]:'');
+      var sub=(plus?'<span class="s" style="color:var(--orange)">inklusive +'+nf.format(plus*mult)+' '+g[2]+' durch die Stufe</span>':'')+(changed?'<span class="s" style="color:var(--blue)">angepasst, Standard '+nf.format(g[1])+' '+g[2]+'</span>':'');
+      var ctl=(mult===1&&a!=null&&NUT[g[0]])?'<div class="stepper"><button data-act="amt" data-r="'+rid+'" data-i="'+gi+'" data-dir="-1" aria-label="weniger '+esc(g[3])+'"'+(a<=0?' disabled':'')+'>−</button><i></i><b style="min-width:62px">'+esc(txt)+'</b><i></i><button data-act="amt" data-r="'+rid+'" data-i="'+gi+'" data-dir="1" aria-label="mehr '+esc(g[3])+'">+</button></div>':'<span class="r num"><b>'+esc(txt)+'</b></span>';
+      return '<div class="row"><span class="main"><span class="t">'+esc(g[3])+'</span>'+sub+'</span>'+ctl+'</div>';
     }).join('')+tl.map(function(x){var tp=TOPS[x];return '<div class="row"><span class="main"><span class="t">'+esc(tp[0])+'</span><span class="s" style="color:var(--blue)">Topping</span></span><span class="r num"><b>'+esc(nf.format(tp[2]*mult)+' '+tp[3])+'</b></span></div>'}).join('')+'</div></section><section class="sec"><div class="sec-h"><span>Zubereitung</span></div><ol class="list steps">'+r.st.map(function(t,i){return '<li><span class="n">'+(i+1)+'</span><span>'+timerize(t,r.n)+'</span></li>'}).join('')+'</ol>'+(r.tip?'<div class="sec-f">'+esc(r.tip)+'</div>':'')+'</section>';
     return h;
   }
@@ -1538,6 +1549,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(a==='batch'){sheetBatch=b.dataset.b==='1';sheet.innerHTML=sheetHtml(sheetRid);return}
     if(a==='pick-set'){setPick(b.dataset.slot,b.dataset.r);closeSheet();render();return}
     if(a==='pick-recipe'){openSheet(b.dataset.r);return}
+    if(a==='amt'||a==='amt-reset'){var ar=b.dataset.r;if(a==='amt-reset'){delete state.amt[ar]}else{var gi=+b.dataset.i,g=R[ar].ing[gi],cur=ingAmt(ar,gi),nv=Math.max(0,Math.round((cur+amtStep(g)*(+b.dataset.dir))*10)/10),o=state.amt[ar]||{};if(nv===g[1])delete o[gi];else o[gi]=nv;if(Object.keys(o).length)state.amt[ar]=o;else delete state.amt[ar]}commit();var st2=sheet.scrollTop;sheet.innerHTML=sheetHtml(ar);sheet.scrollTop=st2;render();return}
     if(a==='top'){var rr=b.dataset.r,tt=b.dataset.t,cur=topsOf(rr).slice(),ix=cur.indexOf(tt);if(ix>=0)cur.splice(ix,1);else cur.push(tt);if(cur.length)state.top[rr]=cur;else delete state.top[rr];commit();var st=sheet.scrollTop;sheet.innerHTML=sheetHtml(rr);sheet.scrollTop=st;render();return}
     onClick(e);
   });
