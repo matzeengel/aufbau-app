@@ -7,7 +7,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Antworten auf Deutsch, kurz und natürlich. Keine Gedankenstriche oder Bindestriche als Stilmittel, auch nicht in Texten der App.
 - Änderungen direkt in `index.html` umsetzen, mit Playwright auf 390 px Breite (hell und dunkel) prüfen, dann committen und auf `main` pushen. GitHub Pages veröffentlicht automatisch.
 - Bei jeder Änderung an App-Dateien `VERSION` in `sw.js` erhöhen, sonst sieht das iPhone die alte Version aus dem Cache.
-- Keine Daten von Matze ins Repository schreiben. Seine Daten liegen nur im Browser (localStorage) auf dem iPhone.
+- Keine Daten von Matze ins Repository schreiben. Seine Daten liegen im Browser (localStorage) und, wenn der Sync an ist, verschlüsselt per Schlüssel in Supabase.
 
 ## Ziele und Regeln (Stand November 2026)
 
@@ -79,8 +79,6 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 
 Noch nicht entschieden, Matze wählt aus:
 
-- Wasser-Tracker (Ziel 3 bis 3,5 l)
-- Haken für Kreatin und Vitamin D
 - Bauchumfang wöchentlich
 - Eigene Rezepte anlegen und bearbeiten
 - Fitbit und Apple Health (nur mit nativer iOS-App möglich)
