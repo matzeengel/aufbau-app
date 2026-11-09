@@ -26,7 +26,9 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Mag nicht: Vollkornnudeln, Wraps, Lachs. Rezepte einfach halten: nur Pfanne, Airfryer und Topf für Reis und Nudeln.
 - Shakshuka nur sonntags.
 - Meal Prep: Mittag wird vorgekocht (Sonntag 4 Portionen für Mo bis Do, Mittwoch 3 Portionen für Fr bis So), abends frisch.
-  - Unter Einkauf kreuzt Matze an, welche Gerichte er diese Woche essen will (`pick`). `distribute()` verteilt sie auf die Tage: Mittag in Blöcken passend zum Vorkochen, Frühstück, Snack und Abendessen im Wechsel, Shakshuka nur sonntags. Plan A/B gibt es nicht mehr.
+  - Einkauf hat zwei Modi: „Planen“ (pro Gericht Anzahl mit Plus und Minus, immer 7 Tage pro Mahlzeit, `changeCount()` und `arrange()` verteilen auf die Tage: Mittag in Blöcken fürs Vorkochen, sonst im Wechsel, Shakshuka nur sonntags) und „Im Laden“ (große Liste zum Abhaken, Erledigte ausblenden, Einkauf abschließen). Plan A/B gibt es nicht mehr.
+- Gerichte pimpen: Toppings (`TOPS`) pro Gericht im Rezeptfenster, gespeichert in `top[rid]`. Sie zählen in Makros, Vorschlag und Einkaufsliste.
+- Extras unter Heute kommen über „Essen hinzufügen“ (Sheet mit Scannen, Suchen, Meine Produkte, Schnell eintragen, manuell).
 - Pro Mahlzeit gibt es mindestens 3 Optionen (`SLOTOPTS`), die alle grob zum Tagesziel passen:
   - Frühstück: Haferflocken mit Mandelmus, Overnight Oats mit Skyr, Rührei mit Vollkornbrot.
   - Mittag (vorgekocht): Chili, Curry, Reis Bowl, Airfryer Kartoffel Hähnchen.
@@ -43,7 +45,8 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
   - Auf GitHub Pages: Live-Barcode-Scanner (ZXing in `vendor/`), Open Food Facts für Produktdaten, nur localStorage.
 - localStorage-Key `aufbau-plan-v1`. Wichtige Felder:
   - `menu = {f,m,b,a}` mit je 7 Rezept-IDs (Wochenplan pro Wochentag), `dayMenu[YYYY-MM-DD] = {slot: rid}` für Änderungen nur an einem Tag
-  - `pick = {f,m,b,a}` angekreuzte Gerichte der Woche
+  - `pick = {f,m,b,a}` Gerichte der Woche (wird aus den Anzahlen abgeleitet)
+  - `top = {rid: [toppingIds]}` Toppings je Gericht
   - `step`, `train`
   - `log[YYYY-MM-DD] = {e:{slot:{r,m}}, x:[{n,k,p,c,f}]}` (gegessene Mahlzeit mit Rezept und Makros zum Zeitpunkt des Abhakens)
   - `weights[date]`, `wtime[date]`
