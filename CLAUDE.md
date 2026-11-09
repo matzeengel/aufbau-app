@@ -7,7 +7,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Antworten auf Deutsch, kurz und natürlich. Keine Gedankenstriche oder Bindestriche als Stilmittel, auch nicht in Texten der App.
 - Änderungen direkt in `index.html` umsetzen, mit Playwright auf 390 px Breite (hell und dunkel) prüfen, dann committen und auf `main` pushen. GitHub Pages veröffentlicht automatisch.
 - Bei jeder Änderung an App-Dateien `VERSION` in `sw.js` erhöhen, sonst sieht das iPhone die alte Version aus dem Cache.
-- Keine Daten von Matze ins Repository schreiben. Seine Daten liegen im Browser (localStorage) und, wenn der Sync an ist, verschlüsselt per Schlüssel in Supabase.
+- Keine Daten von Matze ins Repository schreiben. Seine Daten liegen im Browser (localStorage) und, wenn der Sync an ist, in Supabase (nur mit dem geheimen Sync-Schlüssel abrufbar, die Daten selbst sind nicht verschlüsselt).
 
 ## Ziele und Regeln (Stand November 2026)
 
