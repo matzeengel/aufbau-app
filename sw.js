@@ -1,5 +1,5 @@
 // Offline-Cache für die App-Dateien. Bei jeder Änderung an der App VERSION erhöhen.
-const VERSION = 'aufbau-v13';
+const VERSION = 'aufbau-v14';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'vendor/zxing.min.js', 'vendor/barcode-detector.js', 'vendor/zxing_reader.wasm', 'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

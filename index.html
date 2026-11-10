@@ -1330,20 +1330,22 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   var rEdit=null, EMOS=['🍽️','🥣','🍳','🥞','🥪','🌯','🍝','🍛','🍚','🥘','🍲','🥗','🥩','🍗','🐟','🥔','🍠','🌶️','🥦','🍌','🥜','🥤','🧀','🍕'];
   function openREdit(fromRid,editId){
     var base=fromRid?R[fromRid]:null;
-    if(editId&&state.custom[editId]){var c=state.custom[editId];rEdit={id:editId,n:c.n,s:c.s,t:c.t,e:c.e,ing:c.ing.map(function(g){return [g[0],g[1]]}),st:(c.st||[]).join('\n'),adding:false,q:'',ni:null}}
-    else if(base){rEdit={id:null,n:base.n+' (eigen)',s:base.s,t:base.t,e:EMO[fromRid]||'🍽️',ing:base.ing.filter(function(g){return g[0]&&NUT[g[0]]&&g[1]!=null}).map(function(g,i){return [g[0],ingAmt(fromRid,base.ing.indexOf(g))]}),st:base.st.join('\n'),adding:false,q:'',ni:null}}
-    else rEdit={id:null,n:'',s:'a',t:15,e:'🍽️',ing:[],st:'',adding:false,q:'',ni:null};
+    if(editId&&state.custom[editId]){var c=state.custom[editId];var oa=state.amt[editId]||{};rEdit={id:editId,n:c.n,s:c.s,t:c.t,e:c.e,top:topsOf(editId).slice(),ing:c.ing.map(function(g,i){return [g[0],oa[i]!=null?oa[i]:g[1]]}),st:(c.st||[]).join('\n'),adding:false,q:'',ni:null}}
+    else if(base){rEdit={id:null,n:base.n+' (eigen)',s:base.s,t:base.t,e:EMO[fromRid]||'🍽️',top:topsOf(fromRid).slice(),ing:base.ing.filter(function(g){return g[0]&&NUT[g[0]]&&g[1]!=null}).map(function(g,i){return [g[0],ingAmt(fromRid,base.ing.indexOf(g))]}),st:base.st.join('\n'),adding:false,q:'',ni:null}}
+    else rEdit={id:null,n:'',s:'a',t:15,e:'🍽️',top:[],ing:[],st:'',adding:false,q:'',ni:null};
     lastFocus=document.activeElement;sheetMode='redit';sheet.innerHTML=rEditHtml();showSheet();
   }
+  function reTops(){return Object.keys(TOPS).filter(function(x){return TOPS[x][8].indexOf(rEdit.s)>=0})}
   function reIng(){return rEdit.ing.map(function(g){return I[g[0]]&&NUT[g[0]]?[g[0],g[1],I[g[0]][2],I[g[0]][0]]:[g[0],0,'g','(unbekannt)']})}
   function reResults(){
     var q=(rEdit.q||'').toLowerCase().trim(), ids=Object.keys(NUT).filter(function(id){return I[id]&&I[id][2]!=='x'&&(!q||I[id][0].toLowerCase().indexOf(q)>=0)}).sort(function(a,b){return I[a][0].localeCompare(I[b][0],'de')});
     return ids.map(function(id){var n=NUT[id],u=I[id][2];return '<button class="row" data-act="re-pick" data-id="'+id+'"><span class="main"><span class="t">'+esc(I[id][0])+'</span><span class="s num">'+n[0]+' kcal · '+n[1]+' g P '+(u==='Stk'?'pro Stück':'pro 100 '+u)+'</span></span><span class="r tint" style="font-size:22px">+</span></button>'}).join('')||'<div class="row"><span class="main"><span class="s">Nichts gefunden. Leg die Zutat unten neu an.</span></span></div>';
   }
   function rEditHtml(){
-    var E=rEdit, ing=reIng(), m=calcMacros(ing);
+    var E=rEdit, ing=reIng(), m=calcMacros(ing), tl=E.top.filter(function(x){return reTops().indexOf(x)>=0});
+    tl.forEach(function(x){for(var j=0;j<4;j++)m[j]+=TOPS[x][4+j]});
     var h='<div class="grab"></div><div class="s-top" style="justify-content:space-between"><button data-act="close">Abbrechen</button><button data-act="re-save">Sichern</button></div><h2 class="s-title" id="s-title">'+(E.id?'Rezept bearbeiten':'Eigenes Rezept')+'</h2>';
-    h+='<section class="sec"><div class="card macros"><div><div class="v c-k">'+m[0]+'</div><div class="k">kcal</div></div><div><div class="v c-p">'+m[1]+'</div><div class="k">Protein</div></div><div><div class="v c-c">'+m[2]+'</div><div class="k">Carbs</div></div><div><div class="v" style="color:var(--purple)">'+m[3]+'</div><div class="k">Fett</div></div></div><div class="sec-f">pro Portion, rechnet sich aus den Zutaten</div></section>';
+    h+='<section class="sec"><div class="card macros"><div><div class="v c-k">'+m[0]+'</div><div class="k">kcal</div></div><div><div class="v c-p">'+m[1]+'</div><div class="k">Protein</div></div><div><div class="v c-c">'+m[2]+'</div><div class="k">Carbs</div></div><div><div class="v" style="color:var(--purple)">'+m[3]+'</div><div class="k">Fett</div></div></div><div class="sec-f">pro Portion'+(tl.length?' mit Toppings':'')+', rechnet sich aus den Zutaten</div></section>';
     h+='<section class="sec"><div class="list"><div class="field"><label for="re-n">Name</label><input id="re-n" data-re="n" value="'+esc(E.n)+'" placeholder="z. B. Pute mit Reis" style="width:60%;text-align:right"></div><div class="field"><label for="re-t">Zeit</label><input id="re-t" data-re="t" type="number" inputmode="numeric" value="'+esc(E.t)+'"><span class="unit">Min.</span></div></div></section>';
     h+='<section class="sec"><div class="sec-h"><span>Mahlzeit</span></div><div class="seg">'+[['f','Frühstück'],['m','Mittag'],['b','Snack'],['a','Abend']].map(function(x){return '<button data-act="re-slot" data-s="'+x[0]+'" aria-pressed="'+(E.s===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'+(E.s==='m'?'<div class="sec-f">Mittagsgerichte werden vorgekocht und tauchen im Meal Prep auf.</div>':'')+'</section>';
     h+='<section class="sec"><div class="sec-h"><span>Icon</span></div><div class="card emos-pick">'+EMOS.map(function(x){return '<button data-act="re-emo" data-e="'+x+'" aria-pressed="'+(E.e===x)+'" aria-label="Icon '+x+'">'+x+'</button>'}).join('')+'</div></section>';
@@ -1361,6 +1363,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
         '<div class="btnrow" style="margin-top:10px"><button class="btn fill small" data-act="ni-save">Zutat speichern</button><button class="btn small" data-act="ni-cancel">Abbrechen</button></div></div>';
     }
     h+='</section>';
+    var rt=reTops(); if(rt.length) h+='<section class="sec"><div class="sec-h"><span>Pimpen</span><span style="text-transform:none">'+(tl.length?tl.length+' gewählt':'optional')+'</span></div><div class="card tops">'+rt.map(function(x){var tp=TOPS[x];return '<button class="top" data-act="re-top" data-t="'+x+'" aria-pressed="'+(tl.indexOf(x)>=0)+'">'+esc(tp[0])+'<span>+'+tp[4]+'</span></button>'}).join('')+'</div><div class="sec-f">Toppings kommen jedes Mal dazu und zählen in kcal und Einkauf.</div></section>';
     h+='<section class="sec"><div class="sec-h"><span>Zubereitung</span><span style="text-transform:none">ein Schritt pro Zeile</span></div><textarea class="ta" data-re="st" aria-label="Zubereitung" placeholder="z. B. Reis im Topf nach Packung kochen.">'+esc(E.st)+'</textarea><div class="sec-f">Zeiten wie „12 Minuten“ werden automatisch zu Timern.</div></section>';
     if(E.id) h+='<section class="sec"><button class="btn red" data-act="re-delete" style="width:100%">Rezept löschen</button></section>';
     return h;
@@ -1371,12 +1374,12 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     var ing=E.ing.filter(function(g){return I[g[0]]&&NUT[g[0]]&&+g[1]>0}); if(!ing.length){toast('Bitte mindestens eine Zutat hinzufügen');return}
     var id=E.id||('c'+Date.now().toString(36));
     state.custom[id]={n:String(E.n).trim().slice(0,60),s:E.s,t:Math.max(1,Math.min(240,+E.t||15)),e:E.e,ing:ing.map(function(g){return [g[0],Math.round(+g[1]*10)/10]}),st:String(E.st||'').split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,20)};
-    delete state.amt[id]; registerCustom(state);
+    delete state.amt[id]; state.top=state.top||{}; var tk=(E.top||[]).filter(function(x){return TOPS[x]&&TOPS[x][8].indexOf(E.s)>=0}); if(tk.length) state.top[id]=tk; else delete state.top[id]; registerCustom(state);
     jlog(iso(new Date()),'set',(E.id?'Rezept geändert: ':'Eigenes Rezept angelegt: ')+state.custom[id].n);
     commit(); rEdit=null; closeSheet(); render(); toast(E.id?'Rezept gespeichert':'Rezept angelegt');
   }
   function reDelete(id){
-    var n=state.custom[id]&&state.custom[id].n; delete state.custom[id]; delete state.amt[id]; delete state.top[id]; registerCustom(state);
+    var n=state.custom[id]&&state.custom[id].n; delete state.custom[id]; delete state.amt[id]; if(state.top) delete state.top[id]; registerCustom(state);
     SLOTS.forEach(function(s){state.menu[s]=state.menu[s].map(function(r){return R[r]?r:SLOTOPTS[s][0]});state.pick[s]=(state.pick[s]||[]).filter(function(r){return R[r]})});
     Object.keys(state.dayMenu).forEach(function(k){var o=state.dayMenu[k];Object.keys(o).forEach(function(s){if(!R[o[s]])delete o[s]});if(!Object.keys(o).length)delete state.dayMenu[k]});
     jlog(iso(new Date()),'set-off','Rezept gelöscht: '+n); commit(); rEdit=null; closeSheet(); render(); toast('Rezept gelöscht');
@@ -1835,6 +1838,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     if(rEdit&&sheetMode==='redit'){
       if(a==='re-save'){reSave();return}
       if(a==='re-delete'){if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Wirklich löschen?';return}reDelete(rEdit.id);return}
+      if(a==='re-top'){var tx=b.dataset.t,ti=rEdit.top.indexOf(tx);if(ti>=0)rEdit.top.splice(ti,1);else rEdit.top.push(tx);reRedraw();return}
       if(a==='re-slot'){rEdit.s=b.dataset.s;reRedraw();return}
       if(a==='re-emo'){rEdit.e=b.dataset.e;reRedraw();return}
       if(a==='re-add'){rEdit.adding=!rEdit.adding;rEdit.ni=null;reRedraw();var qi=sheet.querySelector('[data-re="q"]');if(qi)qi.focus();return}
