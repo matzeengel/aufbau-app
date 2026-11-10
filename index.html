@@ -311,9 +311,9 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
 .cta{width:100%;border:0;border-radius:14px;padding:15px 16px;background:var(--blue);color:#fff;font-size:17px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .cta span{opacity:.85;font-weight:500;font-size:15px}
 /* Toppings */
-.tops{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px}
-.top{border:0;background:var(--fill);border-radius:999px;padding:8px 13px;font-size:15px;color:var(--label);display:inline-flex;gap:6px;align-items:center}
-.top span{color:var(--label2);font-size:13px;font-variant-numeric:tabular-nums}
+.tops{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 16px}
+.top{border:0;background:var(--fill);border-radius:12px;padding:9px 12px;font-size:15px;font-weight:500;color:var(--label);display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;min-width:0}
+.top span{color:var(--label2);font-size:13px;font-weight:400;font-variant-numeric:tabular-nums}
 .top[aria-pressed="true"]{background:var(--blue);color:#fff}
 .top[aria-pressed="true"] span{color:rgba(255,255,255,.8)}
 .tagline{color:var(--blue);font-size:13px;margin-top:1px;display:block}
@@ -698,6 +698,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
   function topsOf(rid){return (state.top&&state.top[rid])||[]}
   function topsFor(rid){return Object.keys(TOPS).filter(function(x){return TOPS[x][8].indexOf(R[rid].s)>=0})}
   function macros(rid){var r=R[rid],m=r.m.slice(),i;if(r.x&&extraOn(r.s)){for(i=0;i<4;i++)m[i]+=r.x[i+2]}topsOf(rid).forEach(function(x){for(i=0;i<4;i++)m[i]+=TOPS[x][4+i]});var ad=amtDelta(rid);for(i=0;i<4;i++)m[i]=Math.max(0,Math.round(m[i]+ad[i]));return m}
+  function topAmt(x){var tp=TOPS[x];return nf.format(tp[2])+' '+(tp[3]==='Stk'?'Stück':tp[3])}
   function topNames(rid){var t=topsOf(rid);return t.length?'mit '+t.map(function(x){return TOPS[x][0]}).join(', '):''}
   function isTrainDay(k,d){var l=k&&state.log[k];if(l&&l.rest===true)return false;if(l&&l.rest===false)return true;return state.tdays.indexOf(d)>=0}
   /* Ziel: an Ruhetagen 200 kcal weniger, vor allem Kohlenhydrate */
@@ -1363,7 +1364,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
         '<div class="btnrow" style="margin-top:10px"><button class="btn fill small" data-act="ni-save">Zutat speichern</button><button class="btn small" data-act="ni-cancel">Abbrechen</button></div></div>';
     }
     h+='</section>';
-    var rt=reTops(); if(rt.length) h+='<section class="sec"><div class="sec-h"><span>Pimpen</span><span style="text-transform:none">'+(tl.length?tl.length+' gewählt':'optional')+'</span></div><div class="card tops">'+rt.map(function(x){var tp=TOPS[x];return '<button class="top" data-act="re-top" data-t="'+x+'" aria-pressed="'+(tl.indexOf(x)>=0)+'">'+esc(tp[0])+'<span>+'+tp[4]+'</span></button>'}).join('')+'</div><div class="sec-f">Toppings kommen jedes Mal dazu und zählen in kcal und Einkauf.</div></section>';
+    var rt=reTops(); if(rt.length) h+='<section class="sec"><div class="sec-h"><span>Pimpen</span><span style="text-transform:none">'+(tl.length?tl.length+' gewählt':'optional')+'</span></div><div class="card tops">'+rt.map(function(x){var tp=TOPS[x];return '<button class="top" data-act="re-top" data-t="'+x+'" aria-pressed="'+(tl.indexOf(x)>=0)+'">'+esc(tp[0])+'<span>'+esc(topAmt(x))+' · +'+tp[4]+' kcal</span></button>'}).join('')+'</div><div class="sec-f">Toppings kommen jedes Mal dazu und zählen in kcal und Einkauf.</div></section>';
     h+='<section class="sec"><div class="sec-h"><span>Zubereitung</span><span style="text-transform:none">ein Schritt pro Zeile</span></div><textarea class="ta" data-re="st" aria-label="Zubereitung" placeholder="z. B. Reis im Topf nach Packung kochen.">'+esc(E.st)+'</textarea><div class="sec-f">Zeiten wie „12 Minuten“ werden automatisch zu Timern.</div></section>';
     if(E.id) h+='<section class="sec"><button class="btn red" data-act="re-delete" style="width:100%">Rezept löschen</button></section>';
     return h;
@@ -1808,7 +1809,7 @@ footer{color:var(--label2);font-size:13px;margin:8px 16px 0}
     var h='<div class="grab"></div><div class="s-top" style="justify-content:space-between">'+(r.own?'<button data-act="re-edit" data-r="'+rid+'">Bearbeiten</button>':'<button data-act="re-copy" data-r="'+rid+'">Als eigenes kopieren</button>')+'<button data-act="close">Fertig</button></div><div class="ic-tile lg" aria-hidden="true">'+EMO[rid]+'</div><h2 class="s-title" id="s-title">'+esc(r.n)+'</h2><div class="s-sub">'+esc(SLOTNAME[r.s])+' · '+r.t+' Minuten'+(ex?' · mit Stufe '+STEPS[state.step].n:'')+'</div>'+
       '<section class="sec"><div class="card macros"><div><div class="v c-k">'+m[0]+'</div><div class="k">kcal</div></div><div><div class="v c-p">'+m[1]+'</div><div class="k">Protein</div></div><div><div class="v c-c">'+m[2]+'</div><div class="k">Carbs</div></div><div><div class="v" style="color:var(--purple)">'+m[3]+'</div><div class="k">Fett</div></div></div><div class="sec-f">pro Portion</div></section>';
     var tl=topsOf(rid);
-    h+='<section class="sec"><div class="sec-h"><span>Pimpen</span><span style="text-transform:none">'+(tl.length?tl.length+' gewählt':'optional')+'</span></div><div class="card tops">'+topsFor(rid).map(function(x){var tp=TOPS[x],on=tl.indexOf(x)>=0;return '<button class="top" data-act="top" data-r="'+rid+'" data-t="'+x+'" aria-pressed="'+on+'">'+esc(tp[0])+'<span>+'+tp[4]+'</span></button>'}).join('')+'</div><div class="sec-f">Gilt jedes Mal, wenn du dieses Gericht isst. Wird in kcal, Vorschlag und Einkaufsliste mitgerechnet.</div></section>';
+    h+='<section class="sec"><div class="sec-h"><span>Pimpen</span><span style="text-transform:none">'+(tl.length?tl.length+' gewählt':'optional')+'</span></div><div class="card tops">'+topsFor(rid).map(function(x){var tp=TOPS[x],on=tl.indexOf(x)>=0;return '<button class="top" data-act="top" data-r="'+rid+'" data-t="'+x+'" aria-pressed="'+on+'">'+esc(tp[0])+'<span>'+esc(topAmt(x))+' · +'+tp[4]+' kcal</span></button>'}).join('')+'</div><div class="sec-f">Gilt jedes Mal, wenn du dieses Gericht isst. Wird in kcal, Vorschlag und Einkaufsliste mitgerechnet.</div></section>';
     if(b) h+='<section class="sec"><div class="seg"><button data-act="batch" data-b="0" aria-pressed="'+!sheetBatch+'">1 Portion</button><button data-act="batch" data-b="1" aria-pressed="'+sheetBatch+'">'+b+' Portionen</button></div></section>';
     h+='<section class="sec"><div class="sec-h"><span>Zutaten'+(mult>1?' für '+mult+' Portionen':'')+'</span>'+(state.amt[rid]?'<button class="act" data-act="amt-reset" data-r="'+rid+'">Standard</button>':(mult===1?'<span style="text-transform:none">Menge mit + und −</span>':''))+'</div><div class="list">'+r.ing.map(function(g,gi){
       var a=g[1]==null?null:ingAmt(rid,gi), plus=ex&&ex[0]===g[0]?ex[1]:0, changed=a!=null&&a!==g[1], txt=a==null?'etwas':nf.format((a+plus)*mult)+(g[2]?' '+g[2]:'');
