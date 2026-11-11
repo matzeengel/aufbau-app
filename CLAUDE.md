@@ -28,7 +28,7 @@ Persönliche Ernährungs- und Fortschritts-App für Matze. Nur er nutzt sie, pri
 - Meal Prep: Mittag wird vorgekocht (Sonntag 4 Portionen für Mo bis Do, Mittwoch 3 Portionen für Fr bis So), abends frisch.
   - Einkauf hat zwei Modi: „Planen“ (pro Gericht Anzahl mit Plus und Minus, immer 7 Tage pro Mahlzeit, `changeCount()` und `arrange()` verteilen auf die Tage: Mittag in Blöcken fürs Vorkochen, sonst im Wechsel, Shakshuka nur sonntags) und „Im Laden“ (große Liste zum Abhaken, Erledigte ausblenden, Einkauf abschließen). Plan A/B gibt es nicht mehr.
 - Mengen anpassen: Im Rezept hat jede Zutat Plus und Minus (`amt[rid][index]`). Makros werden über `NUT` (Nährwerte pro 100 g/ml bzw. pro Stück) neu berechnet, Einkauf und Meal Prep nutzen die angepassten Mengen. „Standard“ setzt zurück.
-- Gerichte pimpen: Toppings (`TOPS`) pro Gericht im Rezeptfenster, gespeichert in `top[rid]`. Sie zählen in Makros, Vorschlag und Einkaufsliste.
+- Gerichte pimpen: Toppings (`TOPS`) pro Gericht im Rezeptfenster, gespeichert in `top[rid]`. Menge je Topping mit Plus und Minus in der Zutatenliste, gespeichert in `tamt[rid][toppingId]` (Makros werden anteilig gerechnet). Sie zählen in Makros, Vorschlag und Einkaufsliste.
 - In der Auswahl einer Mahlzeit (Heute) stehen unter „Weitere Gerichte“ auch alle Rezepte der anderen Mahlzeiten, z. B. das Mittagsgericht zum Abendessen. Solche Mittagsgerichte zählt der Kochen-Tab als zusätzliche Meal-Prep-Portion.
 - Extras unter Heute kommen über „Essen hinzufügen“ (Sheet mit Scannen, Suchen, Meine Produkte, Schnell eintragen, manuell).
 - Pro Mahlzeit gibt es mindestens 3 Optionen (`SLOTOPTS`), die alle grob zum Tagesziel passen:
